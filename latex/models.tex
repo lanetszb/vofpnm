@@ -1,0 +1,375 @@
+\documentclass[a4paper,12pt]{extreport}
+
+\usepackage{extsizes}
+\usepackage{cmap} % для кодировки шрифтов в pdf
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+ \usepackage[usenames, dvipsnames]{color}
+\definecolor{fontColor}{RGB}{169, 183, 198}
+\definecolor{pageColor}{RGB}{43, 43, 43}
+
+\usepackage{mathtools}
+
+\makeatletter
+\let\mytagform@=\tagform@
+\def\tagform@#1{\maketag@@@{\color{fontColor}(#1)}}
+\makeatother
+
+%\renewcommand\theequation{{\color{fontColor}\arabic{equation_diff}}}
+
+\linespread{1.3} % полуторный интервал
+\renewcommand{\rmdefault}{ptm} % Times New Roman
+\frenchspacing
+
+\usepackage{graphicx}
+\graphicspath{{images/}}
+\usepackage{amssymb,amsfonts,amsmath,amsthm}
+\usepackage{mathtext}
+\usepackage{cite}
+\usepackage{enumerate}
+\usepackage{float}
+\usepackage[pdftex,unicode,colorlinks = true,linkcolor = white]{hyperref}
+% \usepackage[pdftex,unicode,colorlinks = true,linkcolor = black]{hyperref}
+\usepackage{indentfirst}
+\usepackage{placeins}
+\bibliographystyle{unsrt}
+\usepackage{makecell}
+\usepackage{ulem}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{multicol}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows,decorations.pathmorphing,
+	backgrounds,positioning,fit,petri}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\thepage}
+\fancyheadoffset{0mm}
+\fancyfootoffset{0mm}
+\setlength{\headheight}{17pt}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancypagestyle{plain}{
+\fancyhf{}
+\rhead{\thepage}}
+
+\usepackage{geometry}
+\geometry{left=1.5cm}
+\geometry{right=1.5cm}
+\geometry{top=2.4cm}
+\geometry{bottom=2.4cm}
+
+\author{Aleksandr Zhuravlyov}
+\title{Numerical model of steady state and transient flow}
+\date{\today}
+
+
+\usepackage {titlesec}
+\titleformat{\chapter}{\thispagestyle{myheadings}\centering\hyphenpenalty=10000\normalfont\huge\bfseries}{
+\thechapter. }{0pt}{\Huge}
+\makeatother
+
+
+\usepackage{nomencl}
+\makenomenclature    % Закомментируйте, если перечень не нужен
+%"/usr/texbin/makeindex" %.nlo -s nomencl.ist -o %.nls
+\renewcommand{\nomname}{Перечень условных обозначений}
+\renewcommand{\nompreamble}{\markboth{}{}}
+\newcommand*{\nom}[2]{#1~- #2\nomenclature{#1}{#2}}
+
+\setlength{\columnseprule}{0.4pt}
+\setlength{\columnsep}{50pt}
+\def\columnseprulecolor{\color{fontColor}}
+
+
+\begin{document}
+
+    \pagecolor{pageColor}
+    \color{fontColor}
+    % \maketitle
+    % \newpage
+    % \tableofcontents{\thispagestyle{empty}}
+    % \newpage
+
+    \section*{Single-phase pore network model}
+
+    \begin{eqnarray}
+    \label{one_phase} 
+    \begin{gathered}
+    \sum^{N_{i}}_{j=1, \; i\neq j} G_{ij} = 0,
+    \end{gathered}
+    \end{eqnarray}
+    %
+    \begin{eqnarray}
+    \begin{gathered}
+    \label{press_bound}
+    P_{m} = P^{in}   : m \in inlet, \;\;
+    P_{m} = P^{out}   :m \in outlet,
+    \end{gathered}
+    \end{eqnarray}
+    %
+    \begin{eqnarray}
+    \begin{gathered}
+    \label{eq:mass_flux_simple_pnm}
+    G_{ij} = \bar{\rho}_{ij} \frac{P_{i} - P_{j}}{R_{ij}},
+    \end{gathered}
+    \end{eqnarray}
+    %
+     \begin{eqnarray}
+    \begin{gathered}
+    \bar{\rho}_{ij} = \frac{\rho_{i}+\rho_{j}}{2},
+    \end{gathered}
+    \end{eqnarray}
+    %
+    \begin{eqnarray}
+        \begin{gathered}
+            \alpha_{ij} =\begin{cases}
+                             1: &\text{pseudo compressible},\\
+                             \frac{P_i + P_j}{2P_i}: &\text{ideal gas},
+            \end{cases}
+        \end{gathered}
+    \end{eqnarray}
+    %
+    %
+\begin{eqnarray}
+\begin{gathered}
+R_{ij} =\begin{cases}
+\frac{8 \mu L_{ij}}{\pi r_{ij}^{4}}: &\text{cylindrical},\\
+\frac{12 \mu L_{ij}}{\epsilon_{ij}^{3} \omega_{ij}}: &\text{plates},
+\end{cases}
+\end{gathered}
+\end{eqnarray}
+    %
+\begin{eqnarray}
+\begin{gathered}
+G_{in/out} = \sum_{i}^{in/out} \sum^{N_{i}}_{j=1, \; i\neq j} G_{ij}.
+\end{gathered}
+\end{eqnarray}
+    %
+\begin{eqnarray}
+\begin{gathered}
+Q_{in/out} = \frac{G_{in/out}}{\rho_{in/out}}.
+\end{gathered}
+\end{eqnarray}
+    %
+\begin{eqnarray}
+\begin{gathered}
+k = a \frac{Q_{in/out}}{A} \frac{\mu L}{P_{in} - P_{out}},
+\end{gathered}
+\end{eqnarray}
+    %
+\begin{eqnarray}
+\begin{gathered}
+a =\begin{cases}
+\frac{\rho_{in/out}}{\bar{\rho}}: &\text{pseudo compressible},\\
+\frac{2P_{in/out}}{P_{in} + P_{out}}: &\text{ideal gas},
+\end{cases}
+\end{gathered}
+\end{eqnarray}
+    %
+\begin{eqnarray}
+\begin{gathered}
+\bar{\rho}=\frac{1}{P_{in}-P_{out}} \int\limits^{P_{in}}_{P_{out}}\rho \; dP.
+\end{gathered}
+\end{eqnarray}
+
+    \section*{FVM Diffusion transient flow}
+
+   \begin{eqnarray}
+   \label{eq:conductivity_integral}
+   \int \limits_{V} \frac{\partial C}{\partial t} d V - \oint \limits_{S} D \vec{\nabla}C d\vec{\Omega} = 0,
+   \end{eqnarray}
+    \vspace{-0.5cm}
+\begin{eqnarray}
+\label{eq:conductivity_bound_integral}
+C\left(t\right) \Big|_{cleat} = \hat{C} \left(t\right), \;
+\vec{\nabla} C \Big|_{outer} = 0,
+\end{eqnarray}
+    %
+    \begin{eqnarray}
+    \label{eq:langmuir}
+    \hat{C} = \frac{C_L\bar{P}}{P_L + \bar{P}}.
+    \end{eqnarray}
+    %
+    \begin{eqnarray}
+    \label{eq:conductivity_num}
+    \alpha_i \Delta^{t}_i - \beta_{i-}\Delta^{n+1}_{i-} - \beta_{i+}\Delta^{n+1}_{i+}= 0,
+    \end{eqnarray}
+    \begin{eqnarray}
+    \label{eq:conductivity_bound_num}
+    C_1^n = \hat{C}^n, \; \Delta_{M+}^n = 0,
+    \end{eqnarray}
+    %
+\begin{eqnarray}
+\label{eq:alpha_beta}
+\alpha_i = \frac{\Delta V_i}{\Delta t}, \;
+\beta_{i\pm} = \frac{\overline{D}_{i\pm} \Delta \Omega_{i\pm}}{\Delta L_{i\pm}},
+\end{eqnarray}
+    %
+\begin{eqnarray}
+\Delta S_{i\pm} =\begin{cases}
+h^2: & \text{cartesian},\\
+2 \pi h \tilde{r}_{i\pm}: & \text{cylindrical},\\
+4 \pi \tilde{r}^2_{i\pm}: & \text{spherical},
+\end{cases}
+\end{eqnarray}
+%
+\begin{eqnarray}
+V=\begin{cases}
+h^2 \left(\tilde{r}_{M+} - \tilde{r}_{1-}\right): & \text{cartesian},\\
+\pi h \left(\tilde{r}_{M+}^2 - \tilde{r}_{1-}^2\right): & \text{cylindrical},\\
+\frac{4}{3} \pi \left(\tilde{r}_{M+}^3-\tilde{r}_{1-}^3\right): & \text{spherical}.
+\end{cases}
+\end{eqnarray}
+    %
+\begin{eqnarray}
+\label{eq:delta_num}
+\Delta_{i\pm}^n = C_{i\pm1}^n - C_{i}^n, \;
+\Delta_i^{t} = C_i^{n+1} - C_i^{n},
+\end{eqnarray}
+%
+\begin{eqnarray}
+\label{eq:Consumption_conductivity_integral}
+\tilde{G}^{n+1} = -\sum_i^M \alpha_i \Delta_i^{t}.
+\end{eqnarray}
+\newpage
+    \section*{PN and Diffusion coupled}
+
+   \begin{eqnarray}
+   \label{eq:main_coupled_sle}
+   \begin{gathered}
+   \sum^{N_{i}}_{j=1, \; i\neq j} G^{n+1}_{ij} = 0,
+   \end{gathered}
+   \end{eqnarray}
+   %
+   \begin{eqnarray}
+   \label{eq:mass_flux_coupled}
+   \begin{gathered}
+   G^{n+1}_{ij} = \bar{\rho}_{ij}^n \frac{P^{n+1}_{i} - P^{n+1}_{j}}{R_{ij}} - \gamma^n_{ij} \tilde{G}^{n+1}_{ij},
+   \end{gathered}
+   \end{eqnarray}
+    %
+\begin{eqnarray}
+\label{eq:gamma}
+\gamma^n_{ij} =\begin{cases}
+1: & G_{ij} < 0,\\
+0: & G_{ij} \geqslant 0,
+\end{cases}
+\end{eqnarray}
+    %
+\begin{eqnarray}
+\label{eq:bc_gamma}
+\begin{gathered}
+\sum^{N_{i}}_{j=1, \; i\neq j} G_{ij} = \hat{G} : i, j \notin outlet,\;\;
+P_{m} = P^{out}   : m \in outlet,
+\end{gathered}
+\end{eqnarray}
+%
+\begin{eqnarray}
+\label{eq:bc_coupled}
+\begin{gathered}
+\sum^{N_{i}}_{j=1, \; i\neq j} G^{n+1}_{ij} = G^{in}_{i} : i \in inlet,\;\;
+P^{n+1}_{m} = P^{out}   : m \in outlet,
+\end{gathered}
+\end{eqnarray}
+%
+\begin{eqnarray}
+\begin{gathered}
+\tilde{G}_{ij}^{n+1} = \tilde{G}_{ij}'^n \cdot \left(\bar{P}_{ij}^{n+1}-\bar{P}_{ij}^n\right)+\tilde{G}_{ij}^n,
+\end{gathered}
+\end{eqnarray}
+%
+\begin{eqnarray}
+\begin{gathered}
+\tilde{G}_{ij}'^n = \frac{\tilde{G}_{ij}\left(\bar{P}_{ij}^n+ \frac{1}{2}\Delta P\right)-
+	\tilde{G}_{ij}\left(\bar{P}_{ij}^n-\frac{1}{2}\Delta P\right)}{{\Delta P}},
+\end{gathered}
+\end{eqnarray}
+%
+\begin{eqnarray}
+\begin{gathered}
+\bar{P}^{n}_{ij} = \frac{P^n_i+P^n_j}{2}.
+\end{gathered}
+\end{eqnarray}
+%
+\begin{eqnarray}
+\begin{gathered}
+\tilde{G}_{ij}^{n+1} = \tilde{G}_{ij}^n.
+\end{gathered}
+\end{eqnarray}
+
+\newpage
+ \section*{Two-phase pore network model (coupling of  PNM and DFS)}
+ 
+ \subsection*{Description} \label{s1}
+ \begin{enumerate}
+ 	\item Set initial and boundary conditions, in terms of saturation, to the model. Having that, use Eqs. (\ref{eq:twophase_av_saturation_grad}) and (\ref{eq:twophase_dens_visc}) to calculate average saturation gradient, density and viscosity inside each of the throats. 
+ 	\item Calculate the capillary pressure ($P^c$). Estimate the corresponding pressure drop ($\Delta P$) inside the fractures which has a functional dependence on $P^c$ and saturation gradient ($\bar{\nabla} S$).
+ 	\item Calculate the average velocity inside the throats by solving Eq. (\ref{eq:twophase_mass_flux}).
+ 	\item Solve Eqs. (\ref{eq:twophase_integral_w}) and (\ref{eq:twophase_integral_g}) for a corresponding time step to obtain a new saturation profile.
+ \end{enumerate}
+ 
+ The proposed model represents the modified volume of fluid (VOF) approach used in conjunction with PNM to predict the two-phase flow in fractured media.  
+ Here we modify Eq. (\ref{eq:mass_flux_simple_pnm}) to account for the pressure drop due to capillary forces during two-phase flow. 
+ \begin{eqnarray}
+ \begin{gathered}
+ \label{eq:twophase_mass_flux}
+ G_{ij} = \bar{\rho}_{ij} \frac{P_{i} - P_{j} + \Delta P_{ij}}{R_{ij}},
+ \end{gathered}
+ \end{eqnarray}
+  where $\Delta P$ represents the additional pressure gradient due to capillary between two fluids inside the cuboid fracture.
+  
+  Other equations are written for an arbitrary fracture. Thus, the coupled index $ij$, representing an arbitrary fracture, is omitted for simplicity.
+  
+  \begin{eqnarray}
+  \begin{gathered}
+  \label{eq:twophase_mass_hydr_conductance}
+  R = \frac{12 \bar{\mu} L}{h^{3} \omega},
+  \end{gathered}
+  \end{eqnarray}
+  where $h$~--~fracture height, and $\omega$~--~fracture width.
+  
+  The continuity equations for phases flowing through a system of fractures can be expressed as follows:
+  \begin{eqnarray}
+  \label{eq:twophase_integral_w}
+  \int \limits_{V} \frac{\partial S^w}{\partial t} d V - \oint \limits_{\Omega} S^w \vec{v} d\vec{\Omega} = 0,
+  \end{eqnarray}
+  
+  \begin{eqnarray}
+  \label{eq:twophase_integral_g}
+ S^g = 1 - S^w,
+  \end{eqnarray}
+  where  $S$ is saturation, $w$~--~water, $g$~--~gas, $\vec{v}$~--~is a velocity of fluid mixture inside the throat. 
+ 
+ The capillary pressure ($P^c$)  and the corresponding pressure drop ($\Delta P$) inside the fracture can be calculated using the following equations:
+  \begin{eqnarray}
+  \begin{gathered}
+  \label{eq:twophase_capillary_pressure_fractures}
+  P^{c} = 2 \gamma cos \theta \left[\frac{1}{h} + \frac{1}{w}\right], \; \Delta P = \Delta P \left(\tilde{\nabla} S, P^c\right),
+  \end{gathered}
+  \end{eqnarray}
+  where $\gamma$~--~interfacial tension, $\theta$~--~contact angle, $h$ is a fracture height and $w$ is a fracture width.
+  \begin{eqnarray}
+  \label{eq:twophase_av_saturation_grad}
+  \begin{gathered}
+  \tilde{\nabla} S = \int_{0}^{L} \nabla S dL \simeq\sum_{k=1}^{M} \nabla S_{k} \Delta L_{k},
+  \end{gathered}
+  \end{eqnarray}
+ where $\tilde{\nabla} S$ is a phase saturation gradient inside the fracture, $M$ is a total number of grid blocks, $\Delta L$~--~grid block length, $k$~--~grid block index.
+ 
+ 
+Average density and viscosity inside the fracture can be calculated as follows:
+  \begin{eqnarray}
+  \label{eq:twophase_dens_visc}
+  \begin{gathered}
+  \bar{\rho} = \frac{1}{M}\left(\sum_{k=1}^M S_{k} \rho_k^w+ \left(1-S\right) \rho_k^g\right), \\
+  \bar{\mu} = \frac{1}{M}\left(\sum_{k=1}^M S_{k} \mu_k^w+ \left(1-S\right) \mu_k^g\right).
+  \end{gathered}
+  \end{eqnarray}
+
+\end{document}
