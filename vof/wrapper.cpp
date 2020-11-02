@@ -38,9 +38,8 @@ using namespace pybind11::literals;
 
 PYBIND11_MODULE(vof_bind, m) {
 
-    m.def("calc_a_func", calcAFunc, "conc"_a, "poro"_a);
-    m.def("calc_b_func", calcBFunc, "conc"_a, "diffusivity"_a,
-          "poro"_a);
+    m.def("calc_a_func", calcAFunc);
+    m.def("calc_b_func", calcBFunc, "velocity"_a);
 
     py::class_<Props, std::shared_ptr<Props>>(m, "Props")
             .def(py::init<const std::map<std::string, std::variant<int, double>> &>(),
@@ -62,8 +61,7 @@ PYBIND11_MODULE(vof_bind, m) {
                  "props"_a, "netgrid"_a)
 
             .def("calc_time_steps", &Local::calcTimeSteps)
-            .def("calc_alphas", &Local::calcAlphas,
-                 "concs"_a, "time_step"_a)
+            .def("calc_alphas", &Local::calcAlphas, "time_step"_a)
             .def_readwrite("time_steps", &Local::_timeSteps)
             .def_readwrite("alphas", &Local::_alphas);
 
@@ -85,8 +83,8 @@ PYBIND11_MODULE(vof_bind, m) {
             .def("fill_matrix", &Equation::fillMatrix)
             .def("calc_concs_implicit", &Equation::calcConcsImplicit)
             .def("cfd_procedure_one_step", &Equation::cfdProcedureOneStep,
-                 "timeStep"_a)
-            .def("cfd_procedure", &Equation::cfdProcedure)
+                 "thrs_velocities"_a, "timeStep"_a)
+            .def("cfd_procedure", &Equation::cfdProcedure, "thrs_velocities"_a)
                     // .def("calc_faces_flow_rate", &Equation::calcFacesFlowRate,
                     //      "faces"_a)
 

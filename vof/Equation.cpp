@@ -69,7 +69,7 @@ void Equation::processNewmanFaces(const double &flowNewman,
 }
 
 void Equation::processNonBoundFaces(const std::set<uint32_t> &faces) {
-    // ToDo: think how to update the method
+    // ToDo: think how to update the method, implement upwind
     for (auto &face : faces) {
         auto &cells = _netgrid->_neighborsCells[face];
         auto &normals = _netgrid->_normalsNeighborsCells[face];
@@ -161,14 +161,15 @@ void Equation::calcConcsImplicit() {
 
 }
 
-void Equation::cfdProcedureOneStep(const double &timeStep) {
+void Equation::cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
+                                   const double &timeStep) {
 
     std::swap(iCurr, iPrev);
-    _convective->calcBetas(_concs[iPrev]);
-    _local->calcAlphas(_concs[iPrev], timeStep);
+
+    _convective->calcBetas(thrsVelocities);
+    _local->calcAlphas(timeStep);
 
     processNonBoundFaces(_netgrid->_typesFaces.at("nonbound"));
-
     fillMatrix();
     processDirichCells(_boundGroupsDirich, _concsBoundDirich);
 
@@ -176,8 +177,7 @@ void Equation::cfdProcedureOneStep(const double &timeStep) {
 
 }
 
-//
-void Equation::cfdProcedure() {
+void Equation::cfdProcedure(std::map<uint32_t, double> &thrsVelocities) {
 
     _concs.emplace_back(_netgrid->_cellsArrays.at("concs_array1"));
     _concs.emplace_back(_netgrid->_cellsArrays.at("concs_array2"));
@@ -185,7 +185,7 @@ void Equation::cfdProcedure() {
     _local->calcTimeSteps();
 
     for (auto &timeStep : _local->_timeSteps) {
-        cfdProcedureOneStep(timeStep);
+        cfdProcedureOneStep(thrsVelocities, timeStep);
         Eigen::Map<Eigen::VectorXd> concCurr(new double[dim], dim);
         concCurr = _concs[iCurr];
         _concsTime.push_back(concCurr);

@@ -42,7 +42,7 @@ pores_coordinates = {0: [1., 2.], 1: [0., -3.], 2: [5., 0.], 3: [7., 0.],
 throats_pores = {0: [0, 2], 1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [3, 5]}
 throats_widths = {0: 0.1, 1: 0.15, 2: 0.25, 3: 0.15, 4: 0.25}
 throats_depths = {0: 0.45, 1: 0.35, 2: 0.6, 3: 0.35, 4: 0.6}
-delta_L = 0.1
+delta_L = 0.01
 min_cells_N = 10
 
 inlet_pores = {0, 1}
@@ -81,25 +81,30 @@ paramsPnm = {'a_gas_dens': a_gas_dens, 'b_gas_dens': b_gas_dens,
              'boundCond': boundCond}
 
 # # Testing Pnm
-# pnm = Pnm(paramsPnm, netgrid)
-# pore_n = len(netgrid.pores_throats)
-#
-# throats_denss = np.tile(liq_dens, pore_n)
-# throats_viscs = np.tile(liq_visc, pore_n)
-# newman_pores_flows = {0: 1.E+5, 1: 3.5E+5}
-# dirichlet_pores_pressures = {4: pressure_out, 5: pressure_out}
-#
-# # newman_pores_flows = {}
-# # dirichlet_pores_pressures = {0: 1.E-7, 1: 1.5E-7,
-# #                              4: pressure_out, 5: pressure_out}
-#
-# pnm.cfd_procedure(throats_denss, throats_viscs,
-#                   newman_pores_flows, dirichlet_pores_pressures)
-# pnm.calc_thrs_flow_rates()
-# pnm.calc_pores_flow_rates()
+pnm = Pnm(paramsPnm, netgrid)
+pore_n = len(netgrid.pores_throats)
 
-# Testing VoF
-conc_ini = float(10.0)
+throats_denss = np.tile(liq_dens, pore_n)
+throats_viscs = np.tile(liq_visc, pore_n)
+newman_pores_flows = {0: 1.E+5, 1: 3.5E+5}
+dirichlet_pores_pressures = {4: pressure_out, 5: pressure_out}
+
+# newman_pores_flows = {}
+# dirichlet_pores_pressures = {0: 1.E-7, 1: 1.5E-7,
+#                              4: pressure_out, 5: pressure_out}
+
+pnm.cfd_procedure(throats_denss, throats_viscs,
+                  newman_pores_flows, dirichlet_pores_pressures)
+pnm.calc_thrs_flow_rates()
+pnm.calc_pores_flow_rates()
+
+mass_flows = pnm.thrs_flow_rates
+cross_secs = netgrid.throats_Ss
+
+vol_flows = dict((k, float(mass_flows[k]) / cross_secs[k]) for k in mass_flows)
+velocities = dict((k, float(mass_flows[k]) / liq_dens) for k in mass_flows)
+# # Testing VoF
+conc_ini = float(0.0)
 concs_array1 = np.tile(conc_ini, netgrid.cells_N)
 concs_array2 = np.tile(conc_ini, netgrid.cells_N)
 concs_arrays = {"concs_array1": concs_array1,
@@ -108,9 +113,9 @@ concs_arrays = {"concs_array1": concs_array1,
 netgrid.cells_arrays = concs_arrays
 
 # computation time
-time_period = float(1000)  # sec
+time_period = float(1)  # sec
 # numerical time step
-time_step = float(10)  # sec
+time_step = float(0.01)  # sec
 
 # diffusivity coeffs (specify only b coeff to make free diffusion constant)
 d_coeff_a = float(0)  # m2/sec
@@ -143,12 +148,12 @@ equation = Equation(props, netgrid, local, convective)
 
 equation.bound_groups_dirich = [key_dirichlet_one, key_dirichlet_two]
 # concentration on dirichlet cells
-conc_left = float(20)
-conc_right = float(10)
+conc_left = float(1.0)
+conc_right = float(0.)
 equation.concs_bound_dirich = {key_dirichlet_one: conc_left,
                                key_dirichlet_two: conc_right}
 
-equation.cfd_procedure()
+equation.cfd_procedure(velocities)
 
 os.system('rm -r inOut/*.vtu')
 os.system('rm -r inOut/*.pvd')

@@ -42,7 +42,7 @@ public:
 
     virtual ~Convective() {}
 
-    void calcBetas(Eigen::Ref<Eigen::VectorXd> concs);
+    void calcBetas(std::map<uint32_t, double> &thrsVelocities);
 
     double weighing(const std::string &method, const double &value0,
                     const double &value1);

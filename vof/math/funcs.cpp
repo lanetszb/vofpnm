@@ -1,12 +1,11 @@
 #include "funcs.h"
 
-double calcAFunc(const double &conc, const double &poro) {
+double calcAFunc() {
 
-    return poro;
+    return 1.;
 }
 
-double
-calcBFunc(const double &conc, const double &diffusivity, const double &poro) {
-    return poro * diffusivity;
+double calcBFunc(const double &velocity) {
+    return velocity;
 }
 

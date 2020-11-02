@@ -44,21 +44,13 @@ double Convective::weighing(const std::string &method, const double &value0,
     else exit(0);
 }
 
-void Convective::calcBetas(Eigen::Ref<Eigen::VectorXd> concs) {
+void Convective::calcBetas(std::map<uint32_t, double> &thrsVelocities) {
 
-    auto &neighborsCells = _netgrid->_neighborsCells;
-    auto &nonBoundFaces = _netgrid->_typesFaces.at("nonbound");
-    auto &inletFaces = _netgrid->_typesFaces.at("inlet");
-    auto &outletFaces = _netgrid->_typesFaces.at("outlet");
-    auto poro = std::get<double>(_props->_params["poro"]);
-
-    for (auto &[throat, faces]: _netgrid->_throatsFaces)
-        for (auto &face : faces) {
-            auto &conc = concs(neighborsCells[face][0]);
-            auto diffusivity = _props->calcD(conc);
-            auto bCoeff = calcBFunc(conc, diffusivity, poro);
-
-            _betas[face] = bCoeff * _netgrid->_throatsSs[throat] / _netgrid->_throatsDLs[throat];
-        }
+    for (auto &[throat, faces]: _netgrid->_throatsFaces) {
+        auto &velocity = thrsVelocities[throat];
+        auto bCoeff = calcBFunc(velocity);
+        for (auto &face : faces)
+            _betas[face] = bCoeff * _netgrid->_throatsSs[throat] / 2.;
+    }
 
 }

@@ -44,14 +44,11 @@ void Local::calcTimeSteps() {
         _timeSteps.push_back(lastStep * timeStep);
 }
 
-void Local::calcAlphas(Eigen::Ref<Eigen::VectorXd> concs,
-                       const double &timeStep) {
-
-    auto poro = std::get<double>(_props->_params["poro"]);
+void Local::calcAlphas(const double &timeStep) {
 
     for (auto &[throat, cells] : _netgrid->_throatsCells)
         for (auto &cell : cells) {
-            auto aCoeff = calcAFunc(concs[cell], poro);
+            auto aCoeff = calcAFunc();
             _alphas[cell] = aCoeff * _netgrid->_throatsDVs[throat] / timeStep;
         }
 

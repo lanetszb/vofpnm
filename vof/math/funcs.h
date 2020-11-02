@@ -7,10 +7,9 @@
 
 #include <Eigen/Dense>
 
-double calcAFunc(const double &conc, const double &poro);
+double calcAFunc();
 
-double
-calcBFunc(const double &conc, const double &diffusion, const double &poro);
+double calcBFunc(const double &velocity);
 
 
 #endif // FUNCS_H

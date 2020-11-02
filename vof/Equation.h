@@ -80,11 +80,12 @@ public:
 
     // void calcConcsIni();
 
-     void calcConcsImplicit();
+    void calcConcsImplicit();
 
-    void cfdProcedureOneStep(const double &timeStep);
+    void cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
+                             const double &timeStep);
 
-    void cfdProcedure();
+    void cfdProcedure(std::map<uint32_t, double> &thrsVelocities);
 
     // double calcFacesFlowRate(Eigen::Ref<Eigen::VectorXui64> faces);
 
