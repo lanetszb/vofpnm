@@ -337,14 +337,59 @@ P^{n+1}_{m} = P^{out}   : m \in outlet,
   The continuity equations for phases flowing through a system of fractures can be expressed as follows:
   \begin{eqnarray}
   \label{eq:twophase_integral_w}
-  \int \limits_{V} \frac{\partial S^w}{\partial t} d V - \oint \limits_{\Omega} S^w \vec{v} d\vec{\Omega} = 0,
+  \int \limits_{V} a \frac{\partial S^w}{\partial t} d V - \oint \limits_{\Omega} b^nS^w d\vec{\Omega} = 0,
   \end{eqnarray}
   
   \begin{eqnarray}
   \label{eq:twophase_integral_g}
- S^g = 1 - S^w,
+  S^g = 1 - S^w,
   \end{eqnarray}
   where  $S$ is saturation, $w$~--~water, $g$~--~gas, $\vec{v}$~--~is a velocity of fluid mixture inside the throat. 
+  
+The following initial and boundary conditions have been applied:
+  
+  \begin{eqnarray}
+  \label{eq:twophase_saturation_init}
+  S^w\left(\vec{x}, \mathit{0}\right) = \hat{S}^w\left(\vec{x}\right), \; 
+  \end{eqnarray}
+  
+  don't know which flow rate shall be used here for newman (mass/volumertic)?
+  \begin{eqnarray}
+  \label{eq:general_diffusivity_bound}
+  S^w\left(\vec{x}, t\right)\Big|_{\mathit{\Gamma}_D} \!\!= \tilde{S}^w\left(\vec{x}, t\right), \; bS^w d\vec{\Omega} \left(\vec{x}, t\right)\Big|_{\mathit{\Gamma}_N} \!\!= \vec{Q}\left(\vec{x}, t\right),
+  \end{eqnarray}
+  
+   \begin{eqnarray}
+  \label{eq:twophase_num}
+  \alpha_i \Delta^{t}_i - \beta_{i-}\Delta^{n+1}_{i-} - \beta_{i+}\Delta^{n+1}_{i+}= 0,
+  \end{eqnarray}
+  
+      \begin{eqnarray}
+  \label{eq:twophase_num_init}
+  S^w = \hat{S}^w, \; 
+  \end{eqnarray}
+  \begin{eqnarray}
+  \label{eq:twophase_num_bound}
+  S^w \Big|_{\mathit{\Gamma}_D}= \tilde{S}^w, \; \beta^n\Delta_x \Big|_{\mathit{\Gamma}_N} = \tilde{Q},
+  \end{eqnarray}
+  
+  \begin{eqnarray}
+  \label{eq:twophase_alpha_beta}
+  \alpha_i = a\frac{\Delta V_i}{\Delta t}, \;
+  \beta_{i\pm} = \bar{b}^n\Delta \Omega_{i\pm},
+  \end{eqnarray}
+
+\begin{eqnarray}
+\label{eq:twophase_a_b_coeffs_free}
+\begin{gathered}
+a = 1, \; \bar{b} = v^n\pm,
+\end{gathered}
+\end{eqnarray}
+
+\begin{eqnarray}
+\label{eq:twophase_delta_num}
+\Delta_t = S^{n+\mathit{1}} - S^{n}, \; \Delta_x = S_{+}^{n+\mathit{1}} - S_{-}^{n+\mathit{1}},
+\end{eqnarray}
  
  The capillary pressure ($P^c$)  and the corresponding pressure drop ($\Delta P$) inside the fracture can be calculated using the following equations:
   \begin{eqnarray}
