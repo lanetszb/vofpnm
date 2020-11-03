@@ -306,16 +306,16 @@ P^{n+1}_{m} = P^{out}   : m \in outlet,
 \newpage
  \section*{Two-phase pore network model (coupling of  PNM and DFS)}
  
- \subsection*{Description} \label{s1}
+ \subsection*{Model description:} \label{s1}
  \begin{enumerate}
  	\item Set initial and boundary conditions, in terms of saturation, to the model. Having that, use Eqs. (\ref{eq:twophase_av_saturation_grad}) and (\ref{eq:twophase_dens_visc}) to calculate average saturation gradient, density and viscosity inside each of the throats. 
  	\item Calculate the capillary pressure ($P^c$). Estimate the corresponding pressure drop ($\Delta P$) inside the fractures which has a functional dependence on $P^c$ and saturation gradient ($\bar{\nabla} S$).
  	\item Calculate the average velocity inside the throats by solving Eq. (\ref{eq:twophase_mass_flux}).
- 	\item Solve Eqs. (\ref{eq:twophase_integral_w}) and (\ref{eq:twophase_integral_g}) for a corresponding time step to obtain a new saturation profile.
+ 	\item Solve Eqs. (\ref{eq:twophase_integral_w}) and (\ref{eq:twophase_gas_phase}) for a corresponding time step to obtain a new saturation profile.
  \end{enumerate}
  
- The proposed model represents the modified volume of fluid (VOF) approach used in conjunction with PNM to predict the two-phase flow in fractured media.  
- Here we modify Eq. (\ref{eq:mass_flux_simple_pnm}) to account for the pressure drop due to capillary forces during two-phase flow. 
+ The proposed model represents the modified volume of fluid (VOF) approach used in conjunction with PNM to predict two-phase flow in fractured media.  
+ Here we modify Eq. (\ref{eq:mass_flux_simple_pnm}) to account for pressure drop due to capillary forces during two-phase flow. 
  \begin{eqnarray}
  \begin{gathered}
  \label{eq:twophase_mass_flux}
@@ -337,34 +337,35 @@ P^{n+1}_{m} = P^{out}   : m \in outlet,
   The continuity equations for phases flowing through a system of fractures can be expressed as follows:
   \begin{eqnarray}
   \label{eq:twophase_integral_w}
-  \int \limits_{V} a \frac{\partial S^w}{\partial t} d V - \oint \limits_{\Omega} b^nS^w d\vec{\Omega} = 0,
+  \int \limits_{V} a \frac{\partial S^w}{\partial t} d V - \oint \limits_{\Omega} b^{n}S^w d\vec{\Omega} = 0,
   \end{eqnarray}
   
   \begin{eqnarray}
-  \label{eq:twophase_integral_g}
+  \label{eq:twophase_gas_phase}
   S^g = 1 - S^w,
   \end{eqnarray}
-  where  $S$ is saturation, $w$~--~water, $g$~--~gas, $\vec{v}$~--~is a velocity of fluid mixture inside the throat. 
-  
-The following initial and boundary conditions have been applied:
+  where  $S$ is saturation, $w$~--~water, $g$~--~gas, $b$ can be treated as a velocity of fluid mixture inside the throat. 
+ \newpage
+The following initial (\ref{eq:twophase_saturation_init}) and boundary conditions (\ref{eq:twophase_saturation_boundary}) have been applied:
   
   \begin{eqnarray}
   \label{eq:twophase_saturation_init}
-  S^w\left(\vec{x}, \mathit{0}\right) = \hat{S}^w\left(\vec{x}\right), \; 
+  S^w\left(\vec{x}, \mathit{0}\right) = \hat{S}^w\left(\vec{x}\right),
   \end{eqnarray}
   
-  don't know which flow rate shall be used here for newman (mass/volumertic)?
   \begin{eqnarray}
-  \label{eq:general_diffusivity_bound}
+  \label{eq:twophase_saturation_boundary}
   S^w\left(\vec{x}, t\right)\Big|_{\mathit{\Gamma}_D} \!\!= \tilde{S}^w\left(\vec{x}, t\right), \; bS^w d\vec{\Omega} \left(\vec{x}, t\right)\Big|_{\mathit{\Gamma}_N} \!\!= \vec{Q}\left(\vec{x}, t\right),
   \end{eqnarray}
+  
+  The finite-volume representation of Eqs. (\ref{eq:twophase_integral_w}), (\ref{eq:twophase_saturation_init}), and (\ref{eq:twophase_saturation_boundary}) can be described as follows:
   
    \begin{eqnarray}
   \label{eq:twophase_num}
   \alpha_i \Delta^{t}_i - \beta_{i-}\Delta^{n+1}_{i-} - \beta_{i+}\Delta^{n+1}_{i+}= 0,
   \end{eqnarray}
   
-      \begin{eqnarray}
+  \begin{eqnarray}
   \label{eq:twophase_num_init}
   S^w = \hat{S}^w, \; 
   \end{eqnarray}
@@ -372,19 +373,14 @@ The following initial and boundary conditions have been applied:
   \label{eq:twophase_num_bound}
   S^w \Big|_{\mathit{\Gamma}_D}= \tilde{S}^w, \; \beta^n\Delta_x \Big|_{\mathit{\Gamma}_N} = \tilde{Q},
   \end{eqnarray}
+  where parameters $\alpha$ and $\beta$ are expressed as follows:
   
   \begin{eqnarray}
   \label{eq:twophase_alpha_beta}
   \alpha_i = a\frac{\Delta V_i}{\Delta t}, \;
   \beta_{i\pm} = \bar{b}^n\Delta \Omega_{i\pm},
   \end{eqnarray}
-
-\begin{eqnarray}
-\label{eq:twophase_a_b_coeffs_free}
-\begin{gathered}
-a = 1, \; \bar{b} = v^n\pm,
-\end{gathered}
-\end{eqnarray}
+  where $\Delta V$~--~volume of a particular grid-block, $\Delta t$~--~numerical time step, $a = \mathit{1}$, $b^n = v^n$, $\overline{b}$~--~average $b$, $\Delta L$~--~distance between centres of two neighbouring grid-blocks, $\Delta S$~--~surface bounding a grid-block (positive or negative sign is defined by the normal direction).
 
 \begin{eqnarray}
 \label{eq:twophase_delta_num}
