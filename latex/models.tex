@@ -337,54 +337,57 @@ P^{n+1}_{m} = P^{out}   : m \in outlet,
   The continuity equations for phases flowing through a system of fractures can be expressed as follows:
   \begin{eqnarray}
   \label{eq:twophase_integral_w}
-  \int \limits_{V} a \frac{\partial S^w}{\partial t} d V - \oint \limits_{\Omega} b^{n}S^w d\vec{\Omega} = 0,
+  \int \limits_{V} \frac{\partial S^w}{\partial t} d V - \oint \limits_{\Omega} \vec{v}S^w d\vec{\Omega} = 0,
   \end{eqnarray}
   
   \begin{eqnarray}
   \label{eq:twophase_gas_phase}
   S^g = 1 - S^w,
   \end{eqnarray}
-  where  $S$ is saturation, $w$~--~water, $g$~--~gas, $b$ can be treated as a velocity of fluid mixture inside the throat. 
+  where  $S$ is saturation, $w$~--~water, $g$~--~gas, $\vec{v}$ is velocity of fluid mixture inside the throat. We are omitting $w$ index for simplicity in further equations.
  \newpage
 The following initial (\ref{eq:twophase_saturation_init}) and boundary conditions (\ref{eq:twophase_saturation_boundary}) have been applied:
   
   \begin{eqnarray}
   \label{eq:twophase_saturation_init}
-  S^w\left(\vec{x}, \mathit{0}\right) = \hat{S}^w\left(\vec{x}\right),
+  S \left(\vec{x}, \mathit{0}\right) = \hat{S} \left(\vec{x}\right),
   \end{eqnarray}
   
   \begin{eqnarray}
   \label{eq:twophase_saturation_boundary}
-  S^w\left(\vec{x}, t\right)\Big|_{\mathit{\Gamma}_D} \!\!= \tilde{S}^w\left(\vec{x}, t\right), \; bS^w d\vec{\Omega} \left(\vec{x}, t\right)\Big|_{\mathit{\Gamma}_N} \!\!= \vec{Q}\left(\vec{x}, t\right),
+  S \Big|_{\mathit{\Gamma}_D} \!\!= \tilde{S}, \; \vec{v}S \Big|_{\mathit{\Gamma}_N} \!\!= \vec{v}\Big|_{\mathit{\Gamma}_N}S \Big|^{vic}_{\mathit{\Gamma}_N},
   \end{eqnarray}
   
   The finite-volume representation of Eqs. (\ref{eq:twophase_integral_w}), (\ref{eq:twophase_saturation_init}), and (\ref{eq:twophase_saturation_boundary}) can be described as follows:
   
    \begin{eqnarray}
   \label{eq:twophase_num}
-  \alpha_i \Delta^{t}_i - \beta_{i-}\Delta^{n+1}_{i-} - \beta_{i+}\Delta^{n+1}_{i+}= 0,
+  \alpha \Delta_{t} -  \sum_{\Delta S} \beta^n\bar{S}^{n+1} = 0,
   \end{eqnarray}
   
   \begin{eqnarray}
   \label{eq:twophase_num_init}
-  S^w = \hat{S}^w, \; 
+  S = \hat{S}^{\mathit{0}}, \; 
   \end{eqnarray}
   \begin{eqnarray}
   \label{eq:twophase_num_bound}
-  S^w \Big|_{\mathit{\Gamma}_D}= \tilde{S}^w, \; \beta^n\Delta_x \Big|_{\mathit{\Gamma}_N} = \tilde{Q},
+  S^{n+\mathit 1}  \Big|_{\mathit{\Gamma}_D}= \tilde{S}^{n+\mathit 1}, \; \beta^n \bar{S}^{n+\mathit 1} \Big|_{\mathit{\Gamma}_N} \!\!= \beta^n S^{n+\mathit 1} \Big|_{\mathit{\Gamma}_N},
   \end{eqnarray}
   where parameters $\alpha$ and $\beta$ are expressed as follows:
   
   \begin{eqnarray}
   \label{eq:twophase_alpha_beta}
-  \alpha_i = a\frac{\Delta V_i}{\Delta t}, \;
-  \beta_{i\pm} = \bar{b}^n\Delta \Omega_{i\pm},
+  \alpha = \frac{\Delta V}{\Delta t}, \;
+  \beta^n = v^n\Delta \Omega,
   \end{eqnarray}
-  where $\Delta V$~--~volume of a particular grid-block, $\Delta t$~--~numerical time step, $a = \mathit{1}$, $b^n = v^n$, $\overline{b}$~--~average $b$, $\Delta L$~--~distance between centres of two neighbouring grid-blocks, $\Delta S$~--~surface bounding a grid-block (positive or negative sign is defined by the normal direction).
+  where $\Delta V$~--~volume of a particular grid-block, $\Delta t$~--~numerical time step, $\Delta L$~--~distance between centres of two neighbouring grid-blocks, $\Delta \Omega$~--~surface bounding a grid-block (positive or negative sign is defined by the normal direction).
 
 \begin{eqnarray}
 \label{eq:twophase_delta_num}
-\Delta_t = S^{n+\mathit{1}} - S^{n}, \; \Delta_x = S_{+}^{n+\mathit{1}} - S_{-}^{n+\mathit{1}},
+\Delta_t = S^{n+\mathit{1}} - S^{n}, \; \bar{S}^{n+\mathit 1} = \begin{cases}
+\frac{1}{2}\left(S_{+}^{n+\mathit{1}} - S_{-}^{n+\mathit{1}}\right) : &\text{average},\\
+S_{upw}^{n+\mathit{1}} : &\text{upwind},
+\end{cases}
 \end{eqnarray}
  
  The capillary pressure ($P^c$)  and the corresponding pressure drop ($\Delta P$) inside the fracture can be calculated using the following equations:
