@@ -66,6 +66,7 @@ void Equation::processNewmanFaces(const double &flowNewman,
             _matrixFacesCells[face][cell] = 0;
             _freeFacesCells[face][cell] = flowNewman;
         }
+
 }
 
 void Equation::processNonBoundFaces(const std::set<uint32_t> &faces) {
@@ -179,16 +180,29 @@ void Equation::cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
 
 void Equation::cfdProcedure(std::map<uint32_t, double> &thrsVelocities) {
 
+
     _concs.emplace_back(_netgrid->_cellsArrays.at("concs_array1"));
     _concs.emplace_back(_netgrid->_cellsArrays.at("concs_array2"));
 
     _local->calcTimeSteps();
 
+    std::vector<double> courNumber;
     for (auto &timeStep : _local->_timeSteps) {
         cfdProcedureOneStep(thrsVelocities, timeStep);
         Eigen::Map<Eigen::VectorXd> concCurr(new double[dim], dim);
         concCurr = _concs[iCurr];
         _concsTime.push_back(concCurr);
+
+        courNumber.clear();
+        for (auto &[throat, velocity]: thrsVelocities)
+            courNumber.push_back(velocity * timeStep / _netgrid->_throatsLs[throat]);
+
+        auto &maxCour = *max_element(courNumber.begin(), courNumber.end());
+        auto avCour = accumulate(courNumber.begin(), courNumber.end(), 0.0) / courNumber.size();
+
+        std::cout << "maxCour: " << maxCour << ' ' << "avCour: " << avCour << std::endl;
+
+
     }
 }
 

@@ -102,7 +102,7 @@ mass_flows = pnm.thrs_flow_rates
 cross_secs = netgrid.throats_Ss
 
 vol_flows = dict((k, float(mass_flows[k]) / cross_secs[k]) for k in mass_flows)
-velocities = dict((k, float(mass_flows[k]) / liq_dens) for k in mass_flows)
+velocities = dict((k, float(mass_flows[k]) / liq_dens / 10.) for k in mass_flows)
 # # Testing VoF
 conc_ini = float(0.0)
 concs_array1 = np.tile(conc_ini, netgrid.cells_N)
