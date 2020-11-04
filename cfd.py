@@ -37,28 +37,28 @@ from vofpnm import Props, Boundary, Local, Convective, Equation
 # from vofpnm import Props, Boundary, Local, Convective, Equation
 
 # model geometry
-# pores_coordinates = {0: [1., 2.], 1: [0., -3.], 2: [5., 0.], 3: [7., 0.],
-#                      4: [9., 2.], 5: [10., -3.]}
-# throats_pores = {0: [0, 2], 1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [3, 5]}
-# throats_widths = {0: 0.1, 1: 0.15, 2: 0.25, 3: 0.15, 4: 0.25}
-# throats_depths = {0: 0.45, 1: 0.35, 2: 0.6, 3: 0.35, 4: 0.6}
-# delta_L = 10.
-# min_cells_N = 5
-#
-# inlet_pores = {0, 1}
-# outlet_pores = {4, 5}
+pores_coordinates = {0: [1., 2.], 1: [0., -3.], 2: [5., 0.], 3: [7., 0.],
+                     4: [9., 2.], 5: [10., -3.]}
+throats_pores = {0: [0, 2], 1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [3, 5]}
+throats_widths = {0: 0.1, 1: 0.15, 2: 0.25, 3: 0.15, 4: 0.25}
+throats_depths = {0: 0.45, 1: 0.35, 2: 0.6, 3: 0.35, 4: 0.6}
+delta_L = 0.1
+min_cells_N = 10
+
+inlet_pores = {0, 1}
+outlet_pores = {4, 5}
 
 # model geometry 3 thrs
 # model geometry
-pores_coordinates = {0: [1., 2.], 1: [0., -3.], 2: [5., 0.], 3: [7., 0.]}
-throats_pores = {0: [0, 2], 1: [1, 2], 2: [2, 3]}
-throats_widths = {0: 0.1, 1: 0.1, 2: 0.1, 3: 0.1, 4: 0.1}
-throats_depths = {0: 0.25, 1: 0.25, 2: 0.25, 3: 0.25, 4: 0.25}
-delta_L = 10.
-min_cells_N = 5
-
-inlet_pores = {0, 1}
-outlet_pores = {3}
+# pores_coordinates = {0: [1., 2.], 1: [0., -3.], 2: [5., 0.], 3: [7., 0.]}
+# throats_pores = {0: [0, 2], 1: [1, 2], 2: [2, 3]}
+# throats_widths = {0: 0.1, 1: 0.1, 2: 0.1, 3: 0.1, 4: 0.1}
+# throats_depths = {0: 0.25, 1: 0.25, 2: 0.25, 3: 0.25, 4: 0.25}
+# delta_L = 0.05
+# min_cells_N = 10
+#
+# inlet_pores = {0, 1}
+# outlet_pores = {3}
 
 # model geometry 1D
 # pores_coordinates = {0: [0., 0.], 1: [1., 0.], 2: [2., 0.], 3: [3., 0.]}
@@ -87,7 +87,7 @@ liq_dens = 997.
 # water_visc (Pa*s) is constant viscosity of water
 liq_visc = 0.001
 # pressure_in (Pa) is a PN inlet pressure
-pressure_in = 275000.
+pressure_in = 225001
 # pressure_out (Pa) is a PN outlet pressure
 pressure_out = 225000.
 # iterative_accuracy is the accuracy for iterative procedures
@@ -109,12 +109,13 @@ pore_n = len(netgrid.pores_throats)
 
 throats_denss = np.tile(liq_dens, pore_n)
 throats_viscs = np.tile(liq_visc, pore_n)
-newman_pores_flows = {0: 1.E+5, 1: 1.E+5}
-dirichlet_pores_pressures = {3: pressure_out}
+# newman_pores_flows = {0: 1.E+7, 1: 1.E+7}
+newman_pores_flows = {}
+# dirichlet_pores_pressures = {3: pressure_out}
 
 # newman_pores_flows = {}
-# dirichlet_pores_pressures = {0: 1.E-7, 1: 1.5E-7,
-#                              4: pressure_out, 5: pressure_out}
+dirichlet_pores_pressures = {0: pressure_in, 1: pressure_in,
+                             4: pressure_out, 5: pressure_out}
 
 pnm.cfd_procedure(throats_denss, throats_viscs,
                   newman_pores_flows, dirichlet_pores_pressures)
@@ -126,6 +127,8 @@ cross_secs = netgrid.throats_Ss
 
 vol_flows = dict((k, float(mass_flows[k]) / cross_secs[k]) for k in mass_flows)
 velocities = dict((k, float(mass_flows[k]) / liq_dens) for k in mass_flows)
+print(velocities)
+
 # # Testing VoF
 conc_ini = float(0.0)
 concs_array1 = np.tile(conc_ini, netgrid.cells_N)
@@ -136,15 +139,11 @@ concs_arrays = {"concs_array1": concs_array1,
 netgrid.cells_arrays = concs_arrays
 
 # computation time
-time_period = float(0.090)  # sec
+time_period = float(120)  # sec
 # numerical time step
-time_step = float(0.0002)  # sec
+time_step = float(0.15)  # sec
 
-# discretisation method
-discr_method = 'average'  # can be average or upwind
-
-params = {'time_period': time_period, 'time_step': time_step,
-          'discr_method': discr_method}
+params = {'time_period': time_period, 'time_step': time_step}
 
 key_dirichlet_one = 'inlet'
 key_dirichlet_two = 'outlet'

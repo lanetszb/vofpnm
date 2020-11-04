@@ -74,7 +74,7 @@ public:
 
     std::set<uint32_t> findNonDirichCells(const std::vector<std::string> &boundGroupsDirich);
 
-    void processNonBoundFaces(const std::set<uint32_t> &faces, const std::string &discrMethod);
+    void processNonBoundFaces(const std::set<uint32_t> &faces);
 
     void fillMatrix();
 

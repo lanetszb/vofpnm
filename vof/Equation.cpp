@@ -69,46 +69,27 @@ void Equation::processNewmanFaces(const double &flowNewman,
 
 }
 
-void Equation::processNonBoundFaces(const std::set<uint32_t> &faces,
-                                    const std::string &discrMethod) {
+void Equation::processNonBoundFaces(const std::set<uint32_t> &faces) {
 
-    if (discrMethod == "average")
-        for (auto &face : faces) {
-            auto &cells = _netgrid->_neighborsCells[face];
-            for (auto &cell : cells) {
-                _matrixFacesCells[face][cell] = _convective->_betas[face] / cells.size();
-                if (cells.size() > 2) {
-                    int mult = cells.size() - 1;
-                    auto &facesCurr = _netgrid->_neighborsFaces[cell];
-                    for (auto &faceCurr : facesCurr)
-                        if (faceCurr == face) {
-                            _matrixFacesCells[face][cell] *= mult;
-                            break;
-                        }
-                }
-                _freeFacesCells[face][cell] = 0;
+
+    for (auto &face : faces) {
+
+        auto cells = _netgrid->_neighborsCells[face];
+        auto &normals = _netgrid->_normalsNeighborsCells[face];
+
+        uint8_t upwindCellsN = 0;
+        for (int i = 0; i < normals.size(); i++)
+            if (normals[i] * _convective->_betas[face] > 0)
+                upwindCellsN++;
+
+        for (int i = 0; i < normals.size(); i++)
+            if (normals[i] * _convective->_betas[face] > 0) {
+                _matrixFacesCells[face][cells[i]] =
+                        _convective->_betas[face] / upwindCellsN;
+                _freeFacesCells[face][cells[i]] = 0;
             }
-        }
 
-    if (discrMethod == "upwind")
-        for (auto &face : faces) {
-
-            auto cells = _netgrid->_neighborsCells[face];
-            auto &normals = _netgrid->_normalsNeighborsCells[face];
-
-            uint8_t upwindCellsN = 0;
-            for (int i = 0; i < normals.size(); i++)
-                if (normals[i] * _convective->_betas[face] > 0)
-                    upwindCellsN++;
-
-            for (int i = 0; i < normals.size(); i++)
-                if (normals[i] * _convective->_betas[face] > 0) {
-                    _matrixFacesCells[face][cells[i]] =
-                            normals[i] * _convective->_betas[face] / upwindCellsN;
-                    _freeFacesCells[face][cells[i]] = 0;
-                }
-
-        }
+    }
 
 }
 
@@ -123,7 +104,8 @@ std::set<uint32_t> Equation::groupCellsByTypes(const std::vector<std::string> &g
     return groupedCells;
 }
 
-std::set<uint32_t> Equation::findNonDirichCells(const std::vector<std::string> &boundGroupsDirich) {
+std::set<uint32_t>
+Equation::findNonDirichCells(const std::vector<std::string> &boundGroupsDirich) {
 
     auto allCells = groupCellsByTypes({"inlet", "nonbound", "outlet"});
     auto dirichCells = groupCellsByTypes(boundGroupsDirich);
@@ -175,30 +157,6 @@ void Equation::fillMatrix() {
         }
 
     }
-    matrix.coeffRef(4, 10) *= 2.;
-    matrix.coeffRef(9, 10) *= 2;
-    matrix.coeffRef(4, 9) = 0;
-    matrix.coeffRef(9, 4) = 0;
-
-
-
-
-    // for (auto &nonDirichCell: findNonDirichCells(_boundGroupsDirich)) {
-
-    //     auto &faces = _netgrid->_neighborsFaces[nonDirichCell];
-    //     auto &normals = _netgrid->_normalsNeighborsFaces[nonDirichCell];
-    //     for (int32_t i = 0; i < faces.size(); i++) {
-    //         auto face = faces[i];
-    //         auto normal = normals[i];
-    //         for (auto &[cell, cellCoeff] : _matrixFacesCells[face])
-    //             // ToDo: Fix matrix filling method
-    //             if (nonDirichCell != cell) {
-    //                 matrix.coeffRef(nonDirichCell, cell) += normal * cellCoeff;
-    //                 matrix.coeffRef(nonDirichCell, nonDirichCell) +=
-    //                         normal * _matrixFacesCells[face][nonDirichCell];
-    //             }
-    //     }
-    // }
 
 }
 
@@ -217,19 +175,16 @@ void Equation::cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
 
     std::swap(iCurr, iPrev);
 
-    auto &discrMethod = std::get<std::string>(_props->_params["discr_method"]);
     _convective->calcBetas(thrsVelocities);
     _local->calcAlphas(timeStep);
 
-    processNonBoundFaces(_netgrid->_typesFaces.at("nonbound"), discrMethod);
-    processNonBoundFaces(_netgrid->_typesFaces.at("outlet"), discrMethod);
+    processNonBoundFaces(_netgrid->_typesFaces.at("nonbound"));
+    processNonBoundFaces(_netgrid->_typesFaces.at("outlet"));
     fillMatrix();
     processDirichCells(_boundGroupsDirich, _satsBoundDirich);
 
-    std::cout << matrix << std::endl;
-    std::cout << std::endl;
-    std::cout << freeVector << std::endl;
-    std::cout << std::endl;
+    // std::cout << matrix << std::endl;
+    // std::cout << std::endl;
 
     calcSatsImplicit();
 
@@ -244,6 +199,8 @@ void Equation::cfdProcedure(std::map<uint32_t, double> &thrsVelocities) {
     _local->calcTimeSteps();
 
     std::vector<double> courNumber;
+    double timeCurr = 0;
+    auto timePeriod = std::get<double>(_props->_params["time_period"]);
     for (auto &timeStep : _local->_timeSteps) {
         cfdProcedureOneStep(thrsVelocities, timeStep);
         Eigen::Map<Eigen::VectorXd> concCurr(new double[dim], dim);
@@ -255,9 +212,13 @@ void Equation::cfdProcedure(std::map<uint32_t, double> &thrsVelocities) {
             courNumber.push_back(velocity * timeStep / _netgrid->_throatsDLs[throat]);
 
         auto &maxCour = *max_element(courNumber.begin(), courNumber.end());
-        auto avCour = accumulate(courNumber.begin(), courNumber.end(), 0.0) / courNumber.size();
+        auto avCour =
+                accumulate(courNumber.begin(), courNumber.end(), 0.0) / courNumber.size();
 
-        std::cout << "maxCour: " << maxCour << ' ' << "avCour: " << avCour << std::endl;
+        timeCurr += timeStep;
+
+        std::cout << "maxCour: " << maxCour << "; avCour: " << avCour << "; time: " <<
+                  round(timeCurr / timePeriod * 1000) * 0.1 << "%." << std::endl;
 
 
     }
