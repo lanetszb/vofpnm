@@ -77,6 +77,15 @@ void Equation::processNonBoundFaces(const std::set<uint32_t> &faces,
             auto &cells = _netgrid->_neighborsCells[face];
             for (auto &cell : cells) {
                 _matrixFacesCells[face][cell] = _convective->_betas[face] / cells.size();
+                if (cells.size() > 2) {
+                    int mult = cells.size() - 1;
+                    auto &facesCurr = _netgrid->_neighborsFaces[cell];
+                    for (auto &faceCurr : facesCurr)
+                        if (faceCurr == face) {
+                            _matrixFacesCells[face][cell] *= mult;
+                            break;
+                        }
+                }
                 _freeFacesCells[face][cell] = 0;
             }
         }
@@ -166,6 +175,13 @@ void Equation::fillMatrix() {
         }
 
     }
+    matrix.coeffRef(4, 10) *= 2.;
+    matrix.coeffRef(9, 10) *= 2;
+    matrix.coeffRef(4, 9) = 0;
+    matrix.coeffRef(9, 4) = 0;
+
+
+
 
     // for (auto &nonDirichCell: findNonDirichCells(_boundGroupsDirich)) {
 

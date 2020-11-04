@@ -138,7 +138,7 @@ netgrid.cells_arrays = concs_arrays
 # computation time
 time_period = float(0.090)  # sec
 # numerical time step
-time_step = float(0.002)  # sec
+time_step = float(0.0002)  # sec
 
 # discretisation method
 discr_method = 'average'  # can be average or upwind
