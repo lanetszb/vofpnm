@@ -32,8 +32,8 @@ Local::Local(std::shared_ptr<Props> props, std::shared_ptr<Netgrid> netgrid) :
 
 void Local::calcTimeSteps() {
 
-    auto time = std::get<double>(_props->_params["time_period"]);
-    auto timeStep = std::get<double>(_props->_params["time_step"]);
+    auto &time = std::get<double>(_props->_params["time_period"]);
+    auto &timeStep = std::get<double>(_props->_params["time_step"]);
     double division = time / timeStep;
     double fullStepsN;
     auto lastStep = std::modf(division, &fullStepsN);

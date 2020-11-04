@@ -49,8 +49,12 @@ void Convective::calcBetas(std::map<uint32_t, double> &thrsVelocities) {
     for (auto &[throat, faces]: _netgrid->_throatsFaces) {
         auto &velocity = thrsVelocities[throat];
         auto bCoeff = calcBFunc(velocity);
-        for (auto &face : faces)
-            _betas[face] = bCoeff * _netgrid->_throatsSs[throat] / 2.;
+        uint32_t faceCurr;
+        for (auto &face : faces) {
+            faceCurr = face;
+            _betas[face] = bCoeff * _netgrid->_throatsSs[throat];
+        }
+        _betas[faceCurr] *= -1;
     }
 
 }

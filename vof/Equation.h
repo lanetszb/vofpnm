@@ -52,35 +52,33 @@ public:
 
     virtual ~Equation() {}
 
-    std::vector<Eigen::Ref<Eigen::VectorXd>> getConcs();
+    std::vector<Eigen::Ref<Eigen::VectorXd>> getSats();
 
-    void setConcs(std::vector<Eigen::Ref<Eigen::VectorXd>> &concs);
+    void setSats(std::vector<Eigen::Ref<Eigen::VectorXd>> &sats);
 
-    std::vector<Eigen::Ref<Eigen::VectorXd>> getConcsTime();
+    std::vector<Eigen::Ref<Eigen::VectorXd>> getSatsTime();
 
-    void setConcsTime(std::vector<Eigen::Ref<Eigen::VectorXd>> &concsTime);
+    void setSatsTime(std::vector<Eigen::Ref<Eigen::VectorXd>> &satsTime);
 
-    Eigen::Ref<Eigen::VectorXd> getConcsIni();
+    Eigen::Ref<Eigen::VectorXd> getSatsIni();
 
-    void setConcsIni(Eigen::Ref<Eigen::VectorXd> concsIni);
+    void setSatsIni(Eigen::Ref<Eigen::VectorXd> satsIni);
 
     void processNewmanFaces(const double &flowNewman,
                             const std::set<uint32_t> &faces);
 
     void processDirichCells(std::vector<std::string> &boundGroups,
-                            std::map<std::string, double> &concsBound);
+                            std::map<std::string, double> &satsBound);
 
     std::set<uint32_t> groupCellsByTypes(const std::vector<std::string> &groups);
 
     std::set<uint32_t> findNonDirichCells(const std::vector<std::string> &boundGroupsDirich);
 
-    void processNonBoundFaces(const std::set<uint32_t> &faces);
+    void processNonBoundFaces(const std::set<uint32_t> &faces, const std::string &discrMethod);
 
     void fillMatrix();
 
-    // void calcConcsIni();
-
-    void calcConcsImplicit();
+    void calcSatsImplicit();
 
     void cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
                              const double &timeStep);
@@ -100,11 +98,11 @@ public:
 
     std::vector<std::string> _boundGroupsDirich;
     std::vector<std::string> _boundGroupsNewman;
-    std::map<std::string, double> _concsBoundDirich;
+    std::map<std::string, double> _satsBoundDirich;
 
-    std::vector<Eigen::Map<Eigen::VectorXd>> _concs;
-    std::vector<Eigen::Map<Eigen::VectorXd>> _concsTime;
-    Eigen::Map<Eigen::VectorXd> _concsIni;
+    std::vector<Eigen::Map<Eigen::VectorXd>> _sats;
+    std::vector<Eigen::Map<Eigen::VectorXd>> _satsTime;
+    Eigen::Map<Eigen::VectorXd> _satsIni;
 
     std::map<uint32_t, std::map<uint32_t, double>> _matrixFacesCells;
     std::map<uint32_t, std::map<uint32_t, double>> _freeFacesCells;

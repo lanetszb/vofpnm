@@ -39,7 +39,7 @@ Equation::Equation(std::shared_ptr<Props> props,
         _convective(convective),
         dim(_netgrid->_cellsN),
         iCurr(0), iPrev(1),
-        _concsIni(new double[dim], dim),
+        _satsIni(new double[dim], dim),
         matrix(dim, dim),
         freeVector(new double[dim], dim) {
 
@@ -69,18 +69,37 @@ void Equation::processNewmanFaces(const double &flowNewman,
 
 }
 
-void Equation::processNonBoundFaces(const std::set<uint32_t> &faces) {
-    // ToDo: think how to update the method, implement upwind
-    for (auto &face : faces) {
-        auto &cells = _netgrid->_neighborsCells[face];
-        auto &normals = _netgrid->_normalsNeighborsCells[face];
-        for (int i = 0; i < cells.size(); i++) {
-            auto &cell = cells[i];
-            auto &normal = normals[i];
-            _matrixFacesCells[face][cell] = normal * _convective->_betas[face];
-            _freeFacesCells[face][cell] = 0;
+void Equation::processNonBoundFaces(const std::set<uint32_t> &faces,
+                                    const std::string &discrMethod) {
+
+    if (discrMethod == "average")
+        for (auto &face : faces) {
+            auto &cells = _netgrid->_neighborsCells[face];
+            for (auto &cell : cells) {
+                _matrixFacesCells[face][cell] = _convective->_betas[face] / cells.size();
+                _freeFacesCells[face][cell] = 0;
+            }
         }
-    }
+
+    if (discrMethod == "upwind")
+        for (auto &face : faces) {
+
+            auto cells = _netgrid->_neighborsCells[face];
+            auto &normals = _netgrid->_normalsNeighborsCells[face];
+
+            uint8_t upwindCellsN = 0;
+            for (int i = 0; i < normals.size(); i++)
+                if (normals[i] * _convective->_betas[face] > 0)
+                    upwindCellsN++;
+
+            for (int i = 0; i < normals.size(); i++)
+                if (normals[i] * _convective->_betas[face] > 0) {
+                    _matrixFacesCells[face][cells[i]] =
+                            normals[i] * _convective->_betas[face] / upwindCellsN;
+                    _freeFacesCells[face][cells[i]] = 0;
+                }
+
+        }
 
 }
 
@@ -110,12 +129,13 @@ std::set<uint32_t> Equation::findNonDirichCells(const std::vector<std::string> &
 }
 
 void Equation::processDirichCells(std::vector<std::string> &boundGroups,
-                                  std::map<std::string, double> &concsBound) {
+                                  std::map<std::string, double> &satsBound) {
 
-    auto allBoundCells = groupCellsByTypes({"inlet", "outlet"});
+    // auto allBoundCells = groupCellsByTypes({"inlet", "outlet"});
+    auto allBoundCells = groupCellsByTypes({"inlet"});
 
     for (auto &bound : boundGroups) {
-        auto &conc = concsBound[bound];
+        auto &conc = satsBound[bound];
         auto dirichCells = _netgrid->_typesCells.at(bound);
 
         for (auto &cell : dirichCells)
@@ -131,7 +151,7 @@ void Equation::fillMatrix() {
 
     for (uint64_t i = 0; i < _netgrid->_cellsN; i++) {
         matrix.coeffRef(i, i) = _local->_alphas[i];
-        freeVector[i] = _local->_alphas[i] * _concs[iPrev][i];
+        freeVector[i] = _local->_alphas[i] * _sats[iPrev][i];
     }
 
     for (auto &nonDirichCell: findNonDirichCells(_boundGroupsDirich)) {
@@ -142,23 +162,37 @@ void Equation::fillMatrix() {
             auto face = faces[i];
             auto normal = normals[i];
             for (auto &[cell, cellCoeff] : _matrixFacesCells[face])
-                if (nonDirichCell != cell) {
-                    matrix.coeffRef(nonDirichCell, cell) += normal * cellCoeff;
-                    matrix.coeffRef(nonDirichCell, nonDirichCell) +=
-                            normal * _matrixFacesCells[face][nonDirichCell];
-                }
+                matrix.coeffRef(nonDirichCell, cell) += normal * cellCoeff;
         }
+
     }
+
+    // for (auto &nonDirichCell: findNonDirichCells(_boundGroupsDirich)) {
+
+    //     auto &faces = _netgrid->_neighborsFaces[nonDirichCell];
+    //     auto &normals = _netgrid->_normalsNeighborsFaces[nonDirichCell];
+    //     for (int32_t i = 0; i < faces.size(); i++) {
+    //         auto face = faces[i];
+    //         auto normal = normals[i];
+    //         for (auto &[cell, cellCoeff] : _matrixFacesCells[face])
+    //             // ToDo: Fix matrix filling method
+    //             if (nonDirichCell != cell) {
+    //                 matrix.coeffRef(nonDirichCell, cell) += normal * cellCoeff;
+    //                 matrix.coeffRef(nonDirichCell, nonDirichCell) +=
+    //                         normal * _matrixFacesCells[face][nonDirichCell];
+    //             }
+    //     }
+    // }
 
 }
 
-void Equation::calcConcsImplicit() {
+void Equation::calcSatsImplicit() {
 
     BiCGSTAB biCGSTAB;
 
     biCGSTAB.compute(matrix);
 
-    _concs[iCurr] = biCGSTAB.solveWithGuess(freeVector, _concs[iPrev]);
+    _sats[iCurr] = biCGSTAB.solveWithGuess(freeVector, _sats[iPrev]);
 
 }
 
@@ -167,22 +201,29 @@ void Equation::cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
 
     std::swap(iCurr, iPrev);
 
+    auto &discrMethod = std::get<std::string>(_props->_params["discr_method"]);
     _convective->calcBetas(thrsVelocities);
     _local->calcAlphas(timeStep);
 
-    processNonBoundFaces(_netgrid->_typesFaces.at("nonbound"));
+    processNonBoundFaces(_netgrid->_typesFaces.at("nonbound"), discrMethod);
+    processNonBoundFaces(_netgrid->_typesFaces.at("outlet"), discrMethod);
     fillMatrix();
-    processDirichCells(_boundGroupsDirich, _concsBoundDirich);
+    processDirichCells(_boundGroupsDirich, _satsBoundDirich);
 
-    calcConcsImplicit();
+    std::cout << matrix << std::endl;
+    std::cout << std::endl;
+    std::cout << freeVector << std::endl;
+    std::cout << std::endl;
+
+    calcSatsImplicit();
 
 }
 
 void Equation::cfdProcedure(std::map<uint32_t, double> &thrsVelocities) {
 
 
-    _concs.emplace_back(_netgrid->_cellsArrays.at("concs_array1"));
-    _concs.emplace_back(_netgrid->_cellsArrays.at("concs_array2"));
+    _sats.emplace_back(_netgrid->_cellsArrays.at("concs_array1"));
+    _sats.emplace_back(_netgrid->_cellsArrays.at("concs_array2"));
 
     _local->calcTimeSteps();
 
@@ -190,12 +231,12 @@ void Equation::cfdProcedure(std::map<uint32_t, double> &thrsVelocities) {
     for (auto &timeStep : _local->_timeSteps) {
         cfdProcedureOneStep(thrsVelocities, timeStep);
         Eigen::Map<Eigen::VectorXd> concCurr(new double[dim], dim);
-        concCurr = _concs[iCurr];
-        _concsTime.push_back(concCurr);
+        concCurr = _sats[iCurr];
+        _satsTime.push_back(concCurr);
 
         courNumber.clear();
         for (auto &[throat, velocity]: thrsVelocities)
-            courNumber.push_back(velocity * timeStep / _netgrid->_throatsLs[throat]);
+            courNumber.push_back(velocity * timeStep / _netgrid->_throatsDLs[throat]);
 
         auto &maxCour = *max_element(courNumber.begin(), courNumber.end());
         auto avCour = accumulate(courNumber.begin(), courNumber.end(), 0.0) / courNumber.size();
@@ -216,8 +257,8 @@ void Equation::cfdProcedure(std::map<uint32_t, double> &thrsVelocities) {
 //         auto &face = faces[i];
 //
 //         auto &neighborsCells = _netgrid->_neighborsCells[face];
-//         auto &conc_prev0 = _concs[iPrev](neighborsCells[0]);
-//         auto &conc_prev1 = _concs[iPrev](neighborsCells[1]);
+//         auto &conc_prev0 = _sats[iPrev](neighborsCells[0]);
+//         auto &conc_prev1 = _sats[iPrev](neighborsCells[1]);
 //
 //         auto &normalsNeighborsCells = _netgrid->_normalsNeighborsCells[face];
 //         auto &norm0 = normalsNeighborsCells[0];
@@ -232,8 +273,8 @@ void Equation::cfdProcedure(std::map<uint32_t, double> &thrsVelocities) {
 //         auto diffusivity = _convective->weighing("meanAverage",
 //                                                  diffusivity0, diffusivity1);
 //
-//         auto &conc_curr0 = _concs[iCurr](neighborsCells[0]);
-//         auto &conc_curr1 = _concs[iCurr](neighborsCells[1]);
+//         auto &conc_curr0 = _sats[iCurr](neighborsCells[0]);
+//         auto &conc_curr1 = _sats[iCurr](neighborsCells[1]);
 //         auto &dS = _netgrid->_facesSs[axis];
 //         auto &dL = _netgrid->_spacing[axis];
 //
@@ -245,30 +286,30 @@ void Equation::cfdProcedure(std::map<uint32_t, double> &thrsVelocities) {
 //     return totalFlowRate;
 // }
 //
-std::vector<Eigen::Ref<Eigen::VectorXd>> Equation::getConcs() {
-    return Eigen::vectorGetter<Eigen::VectorXd>(_concs);
+std::vector<Eigen::Ref<Eigen::VectorXd>> Equation::getSats() {
+    return Eigen::vectorGetter<Eigen::VectorXd>(_sats);
 }
 
-void Equation::setConcs(std::vector<Eigen::Ref<Eigen::VectorXd>> &concs) {
-    Eigen::vectorSetter<Eigen::VectorXd>(concs, _concs);
+void Equation::setSats(std::vector<Eigen::Ref<Eigen::VectorXd>> &sats) {
+    Eigen::vectorSetter<Eigen::VectorXd>(sats, _sats);
 }
 
-std::vector<Eigen::Ref<Eigen::VectorXd>> Equation::getConcsTime() {
-    return Eigen::vectorGetter<Eigen::VectorXd>(_concsTime);
+std::vector<Eigen::Ref<Eigen::VectorXd>> Equation::getSatsTime() {
+    return Eigen::vectorGetter<Eigen::VectorXd>(_satsTime);
 }
 
-void Equation::setConcsTime(
-        std::vector<Eigen::Ref<Eigen::VectorXd>> &concsTime) {
-    Eigen::vectorSetter<Eigen::VectorXd>(concsTime, _concsTime);
+void Equation::setSatsTime(
+        std::vector<Eigen::Ref<Eigen::VectorXd>> &satsTime) {
+    Eigen::vectorSetter<Eigen::VectorXd>(satsTime, _satsTime);
 }
 
-Eigen::Ref<Eigen::VectorXd> Equation::getConcsIni() {
-    return _concsIni;
+Eigen::Ref<Eigen::VectorXd> Equation::getSatsIni() {
+    return _satsIni;
 }
 
-void Equation::setConcsIni(Eigen::Ref<Eigen::VectorXd> concsIni) {
-    if (_concsIni.data() != concsIni.data())
-        delete _concsIni.data();
-    new(&_concsIni) Eigen::Map<Eigen::VectorXd>(concsIni.data(),
-                                                concsIni.size());
+void Equation::setSatsIni(Eigen::Ref<Eigen::VectorXd> satsIni) {
+    if (_satsIni.data() != satsIni.data())
+        delete _satsIni.data();
+    new(&_satsIni) Eigen::Map<Eigen::VectorXd>(satsIni.data(),
+                                               satsIni.size());
 }

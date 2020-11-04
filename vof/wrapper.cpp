@@ -42,11 +42,10 @@ PYBIND11_MODULE(vof_bind, m) {
     m.def("calc_b_func", calcBFunc, "velocity"_a);
 
     py::class_<Props, std::shared_ptr<Props>>(m, "Props")
-            .def(py::init<const std::map<std::string, std::variant<int, double>> &>(),
+            .def(py::init<const std::map<std::string, std::variant<int, double, std::string>> &>(),
                  "params"_a)
 
             .def_readwrite("params", &Props::_params)
-            .def("calc_D", &Props::calcD, "conc"_a)
             .def("print_params", &Props::printParams);
 
     py::class_<Boundary, std::shared_ptr<Boundary>>(m, "Boundary")
@@ -73,7 +72,7 @@ PYBIND11_MODULE(vof_bind, m) {
             .def("weigh_conc", &Convective::weighing, "method"_a,
                  "conc_first"_a, "conc_second"_a)
             .def("calc_betas", &Convective::calcBetas,
-                 "concs"_a)
+                 "velocities"_a)
             .def_readwrite("betas", &Convective::_betas);
     py::class_<Equation, std::shared_ptr<Equation>>(m, "Equation")
             .def(py::init<std::shared_ptr<Props>, std::shared_ptr<Netgrid>,
@@ -81,7 +80,7 @@ PYBIND11_MODULE(vof_bind, m) {
                  "props"_a, "netgrid"_a, "local"_a, "convective"_a)
 
             .def("fill_matrix", &Equation::fillMatrix)
-            .def("calc_concs_implicit", &Equation::calcConcsImplicit)
+            .def("calc_concs_implicit", &Equation::calcSatsImplicit)
             .def("cfd_procedure_one_step", &Equation::cfdProcedureOneStep,
                  "thrs_velocities"_a, "timeStep"_a)
             .def("cfd_procedure", &Equation::cfdProcedure, "thrs_velocities"_a)
@@ -98,13 +97,13 @@ PYBIND11_MODULE(vof_bind, m) {
             .def_readwrite("i_curr", &Equation::iCurr)
             .def_readwrite("i_prev", &Equation::iPrev)
             .def_readwrite("bound_groups_dirich", &Equation::_boundGroupsDirich)
-            .def_readwrite("concs_bound_dirich", &Equation::_concsBoundDirich)
+            .def_readwrite("concs_bound_dirich", &Equation::_satsBoundDirich)
             .def_property("concs_ini",
-                          &Equation::getConcsIni, &Equation::setConcsIni)
+                          &Equation::getSatsIni, &Equation::setSatsIni)
             .def_property("concs",
-                          &Equation::getConcs, &Equation::setConcs)
+                          &Equation::getSats, &Equation::setSats)
             .def_property("concs_time",
-                          &Equation::getConcsTime, &Equation::setConcsTime);
+                          &Equation::getSatsTime, &Equation::setSatsTime);
 
 
 }

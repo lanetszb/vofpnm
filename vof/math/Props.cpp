@@ -26,17 +26,9 @@
 #include <vector>
 
 
-Props::Props(const std::map<std::string, std::variant<int, double>> &params)
+Props::Props(const std::map<std::string, std::variant<int, double, std::string>> &params)
 
         : _params(params) {}
-
-double Props::calcD(const double &conc) {
-
-    auto DCoeffA = std::get<double>(_params["d_coeff_a"]);
-    auto DCoeffB = std::get<double>(_params["d_coeff_b"]);
-
-    return DCoeffA * conc + DCoeffB;
-}
 
 void Props::printParams() {
     for (auto &ent : _params) {

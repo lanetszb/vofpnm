@@ -37,16 +37,39 @@ from vofpnm import Props, Boundary, Local, Convective, Equation
 # from vofpnm import Props, Boundary, Local, Convective, Equation
 
 # model geometry
-pores_coordinates = {0: [1., 2.], 1: [0., -3.], 2: [5., 0.], 3: [7., 0.],
-                     4: [9., 2.], 5: [10., -3.]}
-throats_pores = {0: [0, 2], 1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [3, 5]}
-throats_widths = {0: 0.1, 1: 0.15, 2: 0.25, 3: 0.15, 4: 0.25}
-throats_depths = {0: 0.45, 1: 0.35, 2: 0.6, 3: 0.35, 4: 0.6}
-delta_L = 0.01
-min_cells_N = 10
+# pores_coordinates = {0: [1., 2.], 1: [0., -3.], 2: [5., 0.], 3: [7., 0.],
+#                      4: [9., 2.], 5: [10., -3.]}
+# throats_pores = {0: [0, 2], 1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [3, 5]}
+# throats_widths = {0: 0.1, 1: 0.15, 2: 0.25, 3: 0.15, 4: 0.25}
+# throats_depths = {0: 0.45, 1: 0.35, 2: 0.6, 3: 0.35, 4: 0.6}
+# delta_L = 10.
+# min_cells_N = 5
+#
+# inlet_pores = {0, 1}
+# outlet_pores = {4, 5}
+
+# model geometry 3 thrs
+# model geometry
+pores_coordinates = {0: [1., 2.], 1: [0., -3.], 2: [5., 0.], 3: [7., 0.]}
+throats_pores = {0: [0, 2], 1: [1, 2], 2: [2, 3]}
+throats_widths = {0: 0.1, 1: 0.1, 2: 0.1, 3: 0.1, 4: 0.1}
+throats_depths = {0: 0.25, 1: 0.25, 2: 0.25, 3: 0.25, 4: 0.25}
+delta_L = 10.
+min_cells_N = 5
 
 inlet_pores = {0, 1}
-outlet_pores = {4, 5}
+outlet_pores = {3}
+
+# model geometry 1D
+# pores_coordinates = {0: [0., 0.], 1: [1., 0.], 2: [2., 0.], 3: [3., 0.]}
+# throats_pores = {0: [0, 1], 1: [1, 2], 2: [2, 3]}
+# throats_widths = {0: 0.1, 1: 0.1, 2: 0.1}
+# throats_depths = {0: 0.25, 1: 0.25, 2: 0.25}
+# delta_L = 0.05
+# min_cells_N = 10
+#
+# inlet_pores = {0}
+# outlet_pores = {3}
 
 netgrid = Netgrid(pores_coordinates, throats_pores,
                   throats_widths, throats_depths, delta_L, min_cells_N,
@@ -86,8 +109,8 @@ pore_n = len(netgrid.pores_throats)
 
 throats_denss = np.tile(liq_dens, pore_n)
 throats_viscs = np.tile(liq_visc, pore_n)
-newman_pores_flows = {0: 1.E+5, 1: 3.5E+5}
-dirichlet_pores_pressures = {4: pressure_out, 5: pressure_out}
+newman_pores_flows = {0: 1.E+5, 1: 1.E+5}
+dirichlet_pores_pressures = {3: pressure_out}
 
 # newman_pores_flows = {}
 # dirichlet_pores_pressures = {0: 1.E-7, 1: 1.5E-7,
@@ -102,7 +125,7 @@ mass_flows = pnm.thrs_flow_rates
 cross_secs = netgrid.throats_Ss
 
 vol_flows = dict((k, float(mass_flows[k]) / cross_secs[k]) for k in mass_flows)
-velocities = dict((k, float(mass_flows[k]) / liq_dens / 10.) for k in mass_flows)
+velocities = dict((k, float(mass_flows[k]) / liq_dens) for k in mass_flows)
 # # Testing VoF
 conc_ini = float(0.0)
 concs_array1 = np.tile(conc_ini, netgrid.cells_N)
@@ -113,18 +136,15 @@ concs_arrays = {"concs_array1": concs_array1,
 netgrid.cells_arrays = concs_arrays
 
 # computation time
-time_period = float(1)  # sec
+time_period = float(0.090)  # sec
 # numerical time step
-time_step = float(0.01)  # sec
+time_step = float(0.002)  # sec
 
-# diffusivity coeffs (specify only b coeff to make free diffusion constant)
-d_coeff_a = float(0)  # m2/sec
-d_coeff_b = float(15.E-3)  # m2/sec
-# porosity of rock
-poro = float(1)
+# discretisation method
+discr_method = 'average'  # can be average or upwind
+
 params = {'time_period': time_period, 'time_step': time_step,
-          'd_coeff_a': d_coeff_a, 'd_coeff_b': d_coeff_b,
-          'poro': poro}
+          'discr_method': discr_method}
 
 key_dirichlet_one = 'inlet'
 key_dirichlet_two = 'outlet'
@@ -146,12 +166,12 @@ local.calc_time_steps()
 convective = Convective(props, netgrid)
 equation = Equation(props, netgrid, local, convective)
 
-equation.bound_groups_dirich = [key_dirichlet_one, key_dirichlet_two]
+equation.bound_groups_dirich = [key_dirichlet_one]
 # concentration on dirichlet cells
-conc_left = float(1.0)
-conc_right = float(0.)
-equation.concs_bound_dirich = {key_dirichlet_one: conc_left,
-                               key_dirichlet_two: conc_right}
+sat_left = float(1.0)
+sat_right = float(0.)
+equation.concs_bound_dirich = {key_dirichlet_one: sat_left,
+                               key_dirichlet_two: sat_right}
 
 equation.cfd_procedure(velocities)
 
@@ -162,7 +182,7 @@ file_name = 'inOut/collection.pvd'
 files_names = list()
 files_descriptions = list()
 for i in range(len(local.time_steps)):
-    netgrid.cells_arrays = {'conc_i': equation.concs_time[i]}
+    netgrid.cells_arrays = {'sat': equation.concs_time[i]}
     files_names.append(str(i) + '.vtu')
     files_descriptions.append(str(i))
     netgrid.save_cells('inOut/' + files_names[i])

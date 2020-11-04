@@ -362,7 +362,7 @@ The following initial (\ref{eq:twophase_saturation_init}) and boundary condition
   
    \begin{eqnarray}
   \label{eq:twophase_num}
-  \alpha \Delta_{t} -  \sum_{\Delta S} \beta^n\bar{S}^{n+1} = 0,
+  \alpha S^{n+\mathit{1}} -  \sum_{\Delta S} \beta^n\bar{S}^{n+1} =   \alpha S^{n},
   \end{eqnarray}
   
   \begin{eqnarray}
@@ -384,7 +384,7 @@ The following initial (\ref{eq:twophase_saturation_init}) and boundary condition
 
 \begin{eqnarray}
 \label{eq:twophase_delta_num}
-\Delta_t = S^{n+\mathit{1}} - S^{n}, \; \bar{S}^{n+\mathit 1} = \begin{cases}
+\bar{S}^{n+\mathit 1} = \begin{cases}
 \frac{1}{2}\left(S_{+}^{n+\mathit{1}} - S_{-}^{n+\mathit{1}}\right) : &\text{average},\\
 S_{upw}^{n+\mathit{1}} : &\text{upwind},
 \end{cases}
