@@ -384,11 +384,9 @@ The following initial (\ref{eq:twophase_saturation_init}) and boundary condition
 
 \begin{eqnarray}
 \label{eq:twophase_delta_num}
-\bar{S}^{n+\mathit 1} = \begin{cases}
-\frac{1}{2}\left(S_{+}^{n+\mathit{1}} + S_{-}^{n+\mathit{1}}\right) : &\text{average},\\
-S_{upw}^{n+\mathit{1}} : &\text{upwind},
-\end{cases}
+\bar{S}^{n+\mathit 1} = S_{upw}^{n+\mathit{1}},
 \end{eqnarray}
+ where index $upw$ denotes the upwind discretization method.
  
  The capillary pressure ($P^c$)  and the corresponding pressure drop ($\Delta P$) inside the fracture can be calculated using the following equations:
   \begin{eqnarray}
