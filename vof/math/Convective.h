@@ -44,9 +44,6 @@ public:
 
     void calcBetas(std::map<uint32_t, double> &thrsVelocities);
 
-    double weighing(const std::string &method, const double &value0,
-                    const double &value1);
-
     std::shared_ptr<Props> _props;
     std::shared_ptr<Netgrid> _netgrid;
 

@@ -64,8 +64,9 @@ public:
 
     void setSatsIni(Eigen::Ref<Eigen::VectorXd> satsIni);
 
-    void processNewmanFaces(const double &flowNewman,
-                            const std::set<uint32_t> &faces);
+    Eigen::Ref<Eigen::VectorXd> getThroatsAvSats();
+
+    void setThroatsAvSats(Eigen::Ref<Eigen::VectorXd> throatsAvSats);
 
     void processDirichCells(std::vector<std::string> &boundGroups,
                             std::map<std::string, double> &satsBound);
@@ -82,6 +83,9 @@ public:
 
     void cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
                              const double &timeStep);
+
+    void printCourNumbers(std::map<uint32_t, double> &thrsVelocities,
+                          const double &timeStep);
 
     void cfdProcedure(std::map<uint32_t, double> &thrsVelocities);
 
@@ -100,6 +104,8 @@ public:
     std::vector<std::string> _boundGroupsNewman;
     std::map<std::string, double> _satsBoundDirich;
 
+    std::vector<double> _time;
+
     std::vector<Eigen::Map<Eigen::VectorXd>> _sats;
     std::vector<Eigen::Map<Eigen::VectorXd>> _satsTime;
     Eigen::Map<Eigen::VectorXd> _satsIni;
@@ -109,6 +115,7 @@ public:
 
     Matrix matrix;
     Eigen::Map<Eigen::VectorXd> freeVector;
+    Eigen::Map<Eigen::VectorXd> _throatsAvSats;
 
 
 };

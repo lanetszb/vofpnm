@@ -25,6 +25,7 @@ import sys
 import os
 import numpy as np
 import copy
+import configparser
 import matplotlib.pyplot as plt
 
 current_path = os.path.dirname(os.path.abspath(__file__))
@@ -34,19 +35,187 @@ from netgrid import Netgrid, save_files_collection_to_file
 from vofpnm import Pnm
 from vofpnm import Props, Boundary, Local, Convective, Equation
 
-# from vofpnm import Props, Boundary, Local, Convective, Equation
+__config = configparser.ConfigParser()
+__config.read(sys.argv[1])
+get = __config.get
 
-# model geometry
+################################
+# creating grid with Netgrid
+#################################
+
 pores_coordinates = {0: [1., 2.], 1: [0., -3.], 2: [5., 0.], 3: [7., 0.],
                      4: [9., 2.], 5: [10., -3.]}
 throats_pores = {0: [0, 2], 1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [3, 5]}
 throats_widths = {0: 0.1, 1: 0.15, 2: 0.25, 3: 0.15, 4: 0.25}
 throats_depths = {0: 0.45, 1: 0.35, 2: 0.6, 3: 0.35, 4: 0.6}
-delta_L = 0.1
-min_cells_N = 10
+delta_L = float(get('Properties_grid', 'delta_L'))
+min_cells_N = np.uint16(get('Properties_grid', 'min_cells_N'))
 
 inlet_pores = {0, 1}
 outlet_pores = {4, 5}
+
+netgrid = Netgrid(pores_coordinates, throats_pores,
+                  throats_widths, throats_depths, delta_L, min_cells_N,
+                  inlet_pores, outlet_pores)
+
+#############
+# Testing PNM
+#############
+
+paramsPnm = {'a_gas_dens': float(get('Properties_gas', 'a_gas_dens')),
+             'b_gas_dens': float(get('Properties_gas', 'b_gas_dens')),
+             'gas_visc': float(get('Properties_gas', 'gas_visc')),
+             'liq_dens': float(get('Properties_liquid', 'liq_dens')),
+             'liq_visc': float(get('Properties_liquid', 'liq_visc')),
+             'pressure_in': float(get('Properties_simulation', 'pressure_in')),
+             'pressure_out': float(get('Properties_simulation', 'pressure_out')),
+             'it_accuracy': float(get('Properties_simulation', 'it_accuracy')),
+             'solver_method': str(get('Properties_simulation', 'solver_method'))}
+
+pnm = Pnm(paramsPnm, netgrid)
+pore_n = len(netgrid.pores_throats)
+
+throats_denss = np.tile(paramsPnm['b_gas_dens'], pore_n)
+throats_viscs = np.tile(paramsPnm['gas_visc'], pore_n)
+
+newman_pores_flows = {0: 1.E+4, 1: 1.E+4}
+dirichlet_pores_pressures = {4: paramsPnm['pressure_out'], 5: paramsPnm['pressure_out']}
+# dirichlet_pores_pressures = {3: pressure_out}
+
+# newman_pores_flows = {}
+# dirichlet_pores_pressures = {0: paramsPnm['pressure_in'], 1: paramsPnm['pressure_in'],
+#                              4: paramsPnm['pressure_out'], 5: paramsPnm['pressure_out']}
+
+pnm.cfd_procedure(throats_denss, throats_viscs,
+                  newman_pores_flows, dirichlet_pores_pressures)
+
+pnm.calc_thrs_flow_rates()
+pnm.calc_pores_flow_rates()
+
+# Preparing PNM output for VoF
+mass_flows = pnm.thrs_flow_rates
+cross_secs = netgrid.throats_Ss
+vol_flows = dict((k, float(mass_flows[k]) / cross_secs[k]) for k in mass_flows)
+velocities = dict((k, float(mass_flows[k]) / paramsPnm['liq_dens']) for k in mass_flows)
+
+#############
+# Testing VoF
+#############
+sat_ini = float(get('Properties_vof', 'sat_ini'))
+sat_inlet = float(get('Properties_vof', 'sat_inlet'))
+sat_outlet = float(get('Properties_vof', 'sat_outlet'))
+
+sats_curr = np.tile(sat_ini, netgrid.cells_N)
+for i in netgrid.types_cells['inlet']:
+    sats_curr[i] = sat_inlet
+sats_prev = copy.deepcopy(sats_curr)
+sats_arrays = {"sats_curr": sats_curr,
+               "sats_prev": sats_prev}
+netgrid.cells_arrays = sats_arrays
+
+time_period = float(get('Properties_vof', 'time_period'))  # sec
+time_step = float(get('Properties_vof', 'time_step'))  # sec
+params = {'time_period': time_period, 'time_step': time_step}
+props = Props(params)
+
+boundary = Boundary(props, netgrid)
+boundary_faces_one = copy.deepcopy(netgrid.types_faces['inlet'])
+boundary_faces_two = copy.deepcopy(netgrid.types_faces['outlet'])
+# boundary_face_one = netgrid.types_faces[key_dirichlet_one][0]
+# boundary_faces_one_axis = netgrid.faces_axes[boundary_face_one]
+# boundary_face_two = netgrid.types_faces[key_dirichlet_two][0]
+# boundary_faces_two_axis = netgrid.faces_axes[boundary_face_two]
+boundary.shift_boundary_faces(boundary_faces_one)
+boundary.shift_boundary_faces(boundary_faces_two)
+
+local = Local(props, netgrid)
+local.calc_time_steps()
+convective = Convective(props, netgrid)
+equation = Equation(props, netgrid, local, convective)
+
+equation.bound_groups_dirich = ['inlet']
+equation.sats_bound_dirich = {'inlet': sat_inlet}
+equation.bound_groups_newman = ['outlet']
+
+# equation.sats_bound_dirich = {inlet: sat_inlet,
+#                               outlet: sat_outlet}
+
+# equation.cfd_procedure(velocities)
+
+#############################
+# Getting params for coupling
+#############################
+av_sats = equation.throats_av_sats
+av_density = av_sats * paramsPnm['liq_dens'] + (1 - av_sats) * paramsPnm['a_gas_dens']
+av_viscosity = av_sats * paramsPnm['liq_visc'] + (1 - av_sats) * paramsPnm['gas_visc']
+
+#################
+# Coupling itself
+#################
+equation.sats = [sats_curr, sats_prev]
+local.calc_time_steps()
+sats_init = copy.deepcopy(equation.sats[equation.i_curr])
+sats_time = [sats_init]
+
+# equation.sats_time = sats_time
+# sats_time.append(sats_init)
+# equation.sats_time = sats_time
+time = [0]
+cour_number = np.empty([])
+time_curr = 0
+
+for time_step in local.time_steps:
+    time_curr += time_step
+    equation.cfd_procedure_one_step(velocities, time_step)
+
+    av_sats = equation.throats_av_sats
+    av_density = av_sats * paramsPnm['liq_dens'] + (1 - av_sats) * paramsPnm['a_gas_dens']
+    av_viscosity = av_sats * paramsPnm['liq_visc'] + (1 - av_sats) * paramsPnm['gas_visc']
+
+    sats_curr = copy.deepcopy(equation.sats[equation.i_curr])
+    sats_time.append(sats_curr)
+    time.append(time_curr)
+
+    equation.print_cour_numbers(velocities, time_step)
+    print(' time:', round((time_curr / time_period * 1000 * 0.1), 2), '%.')
+
+    pnm.cfd_procedure(av_density, av_viscosity,
+                      newman_pores_flows, dirichlet_pores_pressures)
+
+    pnm.calc_thrs_flow_rates()
+    pnm.calc_pores_flow_rates()
+
+    # Preparing PNM output for VoF
+    mass_flows = pnm.thrs_flow_rates
+    cross_secs = netgrid.throats_Ss
+    vol_flows = dict((k, float(mass_flows[k]) / cross_secs[k]) for k in mass_flows)
+    velocities = dict((k, float(mass_flows[k]) / paramsPnm['liq_dens']) for k in mass_flows)
+
+#################
+# Paraview output
+#################
+os.system('rm -r inOut/*.vtu')
+os.system('rm -r inOut/*.pvd')
+sats_dict = dict()
+file_name = 'inOut/collection_refined.pvd'
+files_names = list()
+files_descriptions = list()
+
+for i in range(len(time)):
+    netgrid.cells_arrays = {'sat': sats_time[i]}
+    files_names.append(str(i) + '_refined.vtu')
+    files_descriptions.append(str(i))
+    netgrid.save_cells('inOut/' + files_names[i])
+
+save_files_collection_to_file(file_name, files_names, files_descriptions)
+
+# Output
+# netgrid.cells_arrays = {'cells': np.arange(netgrid.cells_N, dtype=np.float64)}
+# netgrid.faces_arrays = {'faces': np.arange(netgrid.faces_N, dtype=np.float64)}
+#
+# os.system('rm -r inOut/*.vtu')
+# netgrid.save_cells('inOut/cells.vtu')
+# netgrid.save_faces('inOut/faces.vtu')
 
 # model geometry 3 thrs
 # model geometry
@@ -70,128 +239,3 @@ outlet_pores = {4, 5}
 #
 # inlet_pores = {0}
 # outlet_pores = {3}
-
-netgrid = Netgrid(pores_coordinates, throats_pores,
-                  throats_widths, throats_depths, delta_L, min_cells_N,
-                  inlet_pores, outlet_pores)
-
-# simulation parameters for pnm
-# a_dens (kg/m3) is a coefficient for equation_diff of gas density = a * P + b
-a_gas_dens = 6.71079e-06
-# b_dens (kg/m3/Pa) is b coefficient for equation_diff of gas density = a * P + b
-b_gas_dens = -2.37253E-02
-# gas_visc (Pa*s) is constant viscosity of gas
-gas_visc = 1.99E-5
-# liq_dens (kg/m3) is constant density of water
-liq_dens = 997.
-# water_visc (Pa*s) is constant viscosity of water
-liq_visc = 0.001
-# pressure_in (Pa) is a PN inlet pressure
-pressure_in = 225001
-# pressure_out (Pa) is a PN outlet pressure
-pressure_out = 225000.
-# iterative_accuracy is the accuracy for iterative procedures
-it_accuracy = 1.e-17
-# eigen solver method (can be biCGSTAB, sparseLU or leastSqCG)
-solver_method = 'sparseLU'
-# boundary conditions
-boundCond = 'dirichlet'
-
-paramsPnm = {'a_gas_dens': a_gas_dens, 'b_gas_dens': b_gas_dens,
-             'gas_visc': gas_visc, 'liq_dens': liq_dens,
-             'pressure_in': pressure_in, 'pressure_out': pressure_out,
-             'it_accuracy': it_accuracy, 'solver_method': solver_method,
-             'boundCond': boundCond}
-
-# # Testing Pnm
-pnm = Pnm(paramsPnm, netgrid)
-pore_n = len(netgrid.pores_throats)
-
-throats_denss = np.tile(liq_dens, pore_n)
-throats_viscs = np.tile(liq_visc, pore_n)
-# newman_pores_flows = {0: 1.E+7, 1: 1.E+7}
-newman_pores_flows = {}
-# dirichlet_pores_pressures = {3: pressure_out}
-
-# newman_pores_flows = {}
-dirichlet_pores_pressures = {0: pressure_in, 1: pressure_in,
-                             4: pressure_out, 5: pressure_out}
-
-pnm.cfd_procedure(throats_denss, throats_viscs,
-                  newman_pores_flows, dirichlet_pores_pressures)
-pnm.calc_thrs_flow_rates()
-pnm.calc_pores_flow_rates()
-
-mass_flows = pnm.thrs_flow_rates
-cross_secs = netgrid.throats_Ss
-
-vol_flows = dict((k, float(mass_flows[k]) / cross_secs[k]) for k in mass_flows)
-velocities = dict((k, float(mass_flows[k]) / liq_dens) for k in mass_flows)
-print(velocities)
-
-# # Testing VoF
-conc_ini = float(0.0)
-concs_array1 = np.tile(conc_ini, netgrid.cells_N)
-concs_array2 = np.tile(conc_ini, netgrid.cells_N)
-concs_arrays = {"concs_array1": concs_array1,
-                "concs_array2": concs_array2}
-
-netgrid.cells_arrays = concs_arrays
-
-# computation time
-time_period = float(120)  # sec
-# numerical time step
-time_step = float(0.15)  # sec
-
-params = {'time_period': time_period, 'time_step': time_step}
-
-key_dirichlet_one = 'inlet'
-key_dirichlet_two = 'outlet'
-
-props = Props(params)
-boundary = Boundary(props, netgrid)
-
-boundary_faces_one = copy.deepcopy(netgrid.types_faces[key_dirichlet_one])
-boundary_faces_two = copy.deepcopy(netgrid.types_faces[key_dirichlet_two])
-# boundary_face_one = netgrid.types_faces[key_dirichlet_one][0]
-# boundary_faces_one_axis = netgrid.faces_axes[boundary_face_one]
-# boundary_face_two = netgrid.types_faces[key_dirichlet_two][0]
-# boundary_faces_two_axis = netgrid.faces_axes[boundary_face_two]
-boundary.shift_boundary_faces(boundary_faces_one)
-boundary.shift_boundary_faces(boundary_faces_two)
-
-local = Local(props, netgrid)
-local.calc_time_steps()
-convective = Convective(props, netgrid)
-equation = Equation(props, netgrid, local, convective)
-
-equation.bound_groups_dirich = [key_dirichlet_one]
-# concentration on dirichlet cells
-sat_left = float(1.0)
-sat_right = float(0.)
-equation.concs_bound_dirich = {key_dirichlet_one: sat_left,
-                               key_dirichlet_two: sat_right}
-
-equation.cfd_procedure(velocities)
-
-os.system('rm -r inOut/*.vtu')
-os.system('rm -r inOut/*.pvd')
-concs_dict = dict()
-file_name = 'inOut/collection.pvd'
-files_names = list()
-files_descriptions = list()
-for i in range(len(local.time_steps)):
-    netgrid.cells_arrays = {'sat': equation.concs_time[i]}
-    files_names.append(str(i) + '.vtu')
-    files_descriptions.append(str(i))
-    netgrid.save_cells('inOut/' + files_names[i])
-
-save_files_collection_to_file(file_name, files_names, files_descriptions)
-
-# Output
-# netgrid.cells_arrays = {'cells': np.arange(netgrid.cells_N, dtype=np.float64)}
-# netgrid.faces_arrays = {'faces': np.arange(netgrid.faces_N, dtype=np.float64)}
-#
-# os.system('rm -r inOut/*.vtu')
-# netgrid.save_cells('inOut/cells.vtu')
-# netgrid.save_faces('inOut/faces.vtu')

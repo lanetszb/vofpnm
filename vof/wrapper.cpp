@@ -69,24 +69,24 @@ PYBIND11_MODULE(vof_bind, m) {
             .def(py::init<std::shared_ptr<Props>, std::shared_ptr<Netgrid>>(),
                  "props"_a, "netgrid"_a)
 
-            .def("weigh_conc", &Convective::weighing, "method"_a,
-                 "conc_first"_a, "conc_second"_a)
             .def("calc_betas", &Convective::calcBetas,
                  "velocities"_a)
             .def_readwrite("betas", &Convective::_betas);
+
     py::class_<Equation, std::shared_ptr<Equation>>(m, "Equation")
             .def(py::init<std::shared_ptr<Props>, std::shared_ptr<Netgrid>,
                          std::shared_ptr<Local>, std::shared_ptr<Convective>>(),
                  "props"_a, "netgrid"_a, "local"_a, "convective"_a)
 
             .def("fill_matrix", &Equation::fillMatrix)
-            .def("calc_concs_implicit", &Equation::calcSatsImplicit)
+            .def("calc_sats_implicit", &Equation::calcSatsImplicit)
             .def("cfd_procedure_one_step", &Equation::cfdProcedureOneStep,
+                 "thrs_velocities"_a, "timeStep"_a)
+            .def("print_cour_numbers", &Equation::printCourNumbers,
                  "thrs_velocities"_a, "timeStep"_a)
             .def("cfd_procedure", &Equation::cfdProcedure, "thrs_velocities"_a)
                     // .def("calc_faces_flow_rate", &Equation::calcFacesFlowRate,
                     //      "faces"_a)
-
             .def("group_cells_by_types", &Equation::groupCellsByTypes,
                  "cells_groups"_a)
             .def("find_non_dirich_cells", &Equation::findNonDirichCells,
@@ -97,12 +97,16 @@ PYBIND11_MODULE(vof_bind, m) {
             .def_readwrite("i_curr", &Equation::iCurr)
             .def_readwrite("i_prev", &Equation::iPrev)
             .def_readwrite("bound_groups_dirich", &Equation::_boundGroupsDirich)
-            .def_readwrite("concs_bound_dirich", &Equation::_satsBoundDirich)
-            .def_property("concs_ini",
+            .def_readwrite("bound_groups_newman", &Equation::_boundGroupsNewman)
+            .def_readwrite("sats_bound_dirich", &Equation::_satsBoundDirich)
+            .def_readwrite("time", &Equation::_time)
+            .def_property("sats_ini",
                           &Equation::getSatsIni, &Equation::setSatsIni)
-            .def_property("concs",
+            .def_property("sats",
                           &Equation::getSats, &Equation::setSats)
-            .def_property("concs_time",
+            .def_property("throats_av_sats",
+                          &Equation::getThroatsAvSats, &Equation::setThroatsAvSats)
+            .def_property("sats_time",
                           &Equation::getSatsTime, &Equation::setSatsTime);
 
 

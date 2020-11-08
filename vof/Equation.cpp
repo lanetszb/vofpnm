@@ -40,6 +40,8 @@ Equation::Equation(std::shared_ptr<Props> props,
         dim(_netgrid->_cellsN),
         iCurr(0), iPrev(1),
         _satsIni(new double[dim], dim),
+        _throatsAvSats(new double[_netgrid->_throatsCellsNs.size()],
+                       _netgrid->_throatsCellsNs.size()),
         matrix(dim, dim),
         freeVector(new double[dim], dim) {
 
@@ -55,18 +57,6 @@ Equation::Equation(std::shared_ptr<Props> props,
                 triplets.emplace_back(nonDirichCell, cell);
 
     matrix.setFromTriplets(triplets.begin(), triplets.end());
-}
-
-
-void Equation::processNewmanFaces(const double &flowNewman,
-                                  const std::set<uint32_t> &faces) {
-
-    for (auto &face : faces)
-        for (auto &cell : _netgrid->_neighborsCells[face]) {
-            _matrixFacesCells[face][cell] = 0;
-            _freeFacesCells[face][cell] = flowNewman;
-        }
-
 }
 
 void Equation::processNonBoundFaces(const std::set<uint32_t> &faces) {
@@ -104,8 +94,8 @@ std::set<uint32_t> Equation::groupCellsByTypes(const std::vector<std::string> &g
     return groupedCells;
 }
 
-std::set<uint32_t>
-Equation::findNonDirichCells(const std::vector<std::string> &boundGroupsDirich) {
+std::set<uint32_t> Equation::findNonDirichCells
+        (const std::vector<std::string> &boundGroupsDirich) {
 
     auto allCells = groupCellsByTypes({"inlet", "nonbound", "outlet"});
     auto dirichCells = groupCellsByTypes(boundGroupsDirich);
@@ -121,9 +111,6 @@ Equation::findNonDirichCells(const std::vector<std::string> &boundGroupsDirich) 
 
 void Equation::processDirichCells(std::vector<std::string> &boundGroups,
                                   std::map<std::string, double> &satsBound) {
-
-    // auto allBoundCells = groupCellsByTypes({"inlet", "outlet"});
-    auto allBoundCells = groupCellsByTypes({"inlet"});
 
     for (auto &bound : boundGroups) {
         auto &conc = satsBound[bound];
@@ -170,6 +157,23 @@ void Equation::calcSatsImplicit() {
 
 }
 
+void Equation::printCourNumbers(std::map<uint32_t, double> &thrsVelocities,
+                                const double &timeStep) {
+
+    std::vector<double> courNumber;
+
+    for (auto &[throat, velocity]: thrsVelocities)
+        courNumber.push_back(velocity * timeStep / _netgrid->_throatsDLs[throat]);
+
+    auto &maxCour = *max_element(courNumber.begin(), courNumber.end());
+    auto avCour =
+            accumulate(courNumber.begin(), courNumber.end(), 0.0) / courNumber.size();
+
+    std::cout << "maxCour: " << maxCour << "; avCour: " << avCour;
+
+
+}
+
 void Equation::cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
                                    const double &timeStep) {
 
@@ -179,49 +183,54 @@ void Equation::cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
     _local->calcAlphas(timeStep);
 
     processNonBoundFaces(_netgrid->_typesFaces.at("nonbound"));
-    processNonBoundFaces(_netgrid->_typesFaces.at("outlet"));
+    for (auto &faces: _boundGroupsNewman)
+        processNonBoundFaces(_netgrid->_typesFaces.at(faces));
+
     fillMatrix();
     processDirichCells(_boundGroupsDirich, _satsBoundDirich);
-
-    // std::cout << matrix << std::endl;
-    // std::cout << std::endl;
-
     calcSatsImplicit();
+
+
+    for (auto &[throat, cells] : _netgrid->_throatsCells) {
+        double cum_sat = 0;
+        for (auto &cell: cells)
+            cum_sat += _sats[iCurr][cell];
+        _throatsAvSats[throat] = cum_sat / cells.size();
+    }
 
 }
 
 void Equation::cfdProcedure(std::map<uint32_t, double> &thrsVelocities) {
 
 
-    _sats.emplace_back(_netgrid->_cellsArrays.at("concs_array1"));
-    _sats.emplace_back(_netgrid->_cellsArrays.at("concs_array2"));
+    _sats.emplace_back(_netgrid->_cellsArrays.at("sats_curr"));
+    _sats.emplace_back(_netgrid->_cellsArrays.at("sats_prev"));
 
     _local->calcTimeSteps();
+
+    Eigen::Map<Eigen::VectorXd> satsInit(new double[dim], dim);
+    satsInit = _sats[iCurr];
+    _satsTime.push_back(satsInit);
+    _time.push_back(0);
 
     std::vector<double> courNumber;
     double timeCurr = 0;
     auto timePeriod = std::get<double>(_props->_params["time_period"]);
     for (auto &timeStep : _local->_timeSteps) {
-        cfdProcedureOneStep(thrsVelocities, timeStep);
-        Eigen::Map<Eigen::VectorXd> concCurr(new double[dim], dim);
-        concCurr = _sats[iCurr];
-        _satsTime.push_back(concCurr);
-
-        courNumber.clear();
-        for (auto &[throat, velocity]: thrsVelocities)
-            courNumber.push_back(velocity * timeStep / _netgrid->_throatsDLs[throat]);
-
-        auto &maxCour = *max_element(courNumber.begin(), courNumber.end());
-        auto avCour =
-                accumulate(courNumber.begin(), courNumber.end(), 0.0) / courNumber.size();
 
         timeCurr += timeStep;
+        cfdProcedureOneStep(thrsVelocities, timeStep);
 
-        std::cout << "maxCour: " << maxCour << "; avCour: " << avCour << "; time: " <<
-                  round(timeCurr / timePeriod * 1000) * 0.1 << "%." << std::endl;
+        Eigen::Map<Eigen::VectorXd> satsCurr(new double[dim], dim);
+        satsCurr = _sats[iCurr];
+        _satsTime.push_back(satsCurr);
+        _time.push_back(timeCurr);
 
+        printCourNumbers(thrsVelocities, timeStep);
+        std::cout << " time: " << round(timeCurr / timePeriod * 1000) * 0.1 << "%." << std::endl;
 
     }
+
 }
 
 //
@@ -289,4 +298,15 @@ void Equation::setSatsIni(Eigen::Ref<Eigen::VectorXd> satsIni) {
         delete _satsIni.data();
     new(&_satsIni) Eigen::Map<Eigen::VectorXd>(satsIni.data(),
                                                satsIni.size());
+}
+
+Eigen::Ref<Eigen::VectorXd> Equation::getThroatsAvSats() {
+    return _throatsAvSats;
+}
+
+void Equation::setThroatsAvSats(Eigen::Ref<Eigen::VectorXd> throatsAvSats) {
+    if (_throatsAvSats.data() != throatsAvSats.data())
+        delete _throatsAvSats.data();
+    new(&_throatsAvSats) Eigen::Map<Eigen::VectorXd>(throatsAvSats.data(),
+                                                     throatsAvSats.size());
 }

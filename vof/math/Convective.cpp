@@ -32,18 +32,6 @@ Convective::Convective(std::shared_ptr<Props> props,
         _netgrid(netgrid),
         _betas(_netgrid->_facesN) {}
 
-double Convective::weighing(const std::string &method, const double &value0,
-                            const double &value1) {
-
-    if (method == "meanAverage")
-        return (value0 + value1) / 2;
-    else if (method == "meanHarmonic")
-        return 2. * value0 * value1 / (value0 + value1);
-    else if (method == "upWind")
-        return std::max(value0, value1);
-    else exit(0);
-}
-
 void Convective::calcBetas(std::map<uint32_t, double> &thrsVelocities) {
 
     for (auto &[throat, faces]: _netgrid->_throatsFaces) {
