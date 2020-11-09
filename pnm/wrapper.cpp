@@ -28,7 +28,9 @@ PYBIND11_MODULE(pnm_bind, m) {
                  "pores_flows"_a,
                  "pores_pressures"_a)
             .def("print_params_pnm", &Pnm::printParamsPnm)
-            .def("cfd_procedure", &Pnm::cfdProcedure)
+            .def("cfd_procedure", &Pnm::cfdProcedure,
+                 "densities"_a, "viscosities"_a, "capillaryPressures"_a,
+                 "poresFlows"_a, "poresPressures"_a)
             .def("calc_thrs_flow_rates", &Pnm::calcThrsFlowRates)
             .def("calc_pores_flow_rates", &Pnm::calcPoresFlowRates)
             .def("calc_total_flow_rate", &Pnm::calcTotalFlowRate)

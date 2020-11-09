@@ -40,8 +40,8 @@ Equation::Equation(std::shared_ptr<Props> props,
         dim(_netgrid->_cellsN),
         iCurr(0), iPrev(1),
         _satsIni(new double[dim], dim),
-        _throatsAvSats(new double[_netgrid->_throatsCellsNs.size()],
-                       _netgrid->_throatsCellsNs.size()),
+        _throatsAvSats(new double[_netgrid->_throatsN], _netgrid->_throatsN),
+        _throatsSatsGrads(new double[_netgrid->_throatsN], _netgrid->_throatsN),
         matrix(dim, dim),
         freeVector(new double[dim], dim) {
 
@@ -171,6 +171,33 @@ void Equation::printCourNumbers(std::map<uint32_t, double> &thrsVelocities,
 
     std::cout << "maxCour: " << maxCour << "; avCour: " << avCour;
 
+}
+
+void Equation::calcThroatsAvSats() {
+
+    for (auto &[throat, cells] : _netgrid->_throatsCells) {
+        double cum_sat = 0;
+        for (auto &cell: cells)
+            cum_sat += _sats[iCurr][cell];
+        _throatsAvSats[throat] = cum_sat / cells.size();
+    }
+
+}
+
+void Equation::calcThroatsSatsGrads() {
+
+    for (auto &[throat, faces]: _netgrid->_throatsFaces) {
+        double cum_sats_grad = 0;
+        for (int i = 1; i < faces.size() - 1; i++) {
+            auto &face = faces[i];
+            for (int j = 0; j < _netgrid->_neighborsCells[face].size(); j++) {
+                auto &cell = _netgrid->_neighborsCells[face][j];
+                auto &normal = _netgrid->_normalsNeighborsCells[face][j];
+                cum_sats_grad += normal * _sats[iCurr][cell];
+            }
+        }
+        _throatsSatsGrads[throat] = cum_sats_grad;
+    }
 
 }
 
@@ -189,14 +216,6 @@ void Equation::cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
     fillMatrix();
     processDirichCells(_boundGroupsDirich, _satsBoundDirich);
     calcSatsImplicit();
-
-
-    for (auto &[throat, cells] : _netgrid->_throatsCells) {
-        double cum_sat = 0;
-        for (auto &cell: cells)
-            cum_sat += _sats[iCurr][cell];
-        _throatsAvSats[throat] = cum_sat / cells.size();
-    }
 
 }
 
@@ -309,4 +328,15 @@ void Equation::setThroatsAvSats(Eigen::Ref<Eigen::VectorXd> throatsAvSats) {
         delete _throatsAvSats.data();
     new(&_throatsAvSats) Eigen::Map<Eigen::VectorXd>(throatsAvSats.data(),
                                                      throatsAvSats.size());
+}
+
+Eigen::Ref<Eigen::VectorXd> Equation::getThroatsSatsGrads() {
+    return _throatsSatsGrads;
+}
+
+void Equation::setThroatsSatsGrads(Eigen::Ref<Eigen::VectorXd> throatsSatsGrads) {
+    if (_throatsSatsGrads.data() != throatsSatsGrads.data())
+        delete _throatsSatsGrads.data();
+    new(&_throatsSatsGrads) Eigen::Map<Eigen::VectorXd>(throatsSatsGrads.data(),
+                                                     throatsSatsGrads.size());
 }

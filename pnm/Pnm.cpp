@@ -58,13 +58,18 @@ void Pnm::calcConductances(const std::vector<double> &densities,
 
 void Pnm::processNonboundPores() {
 
-    for (auto &pore: _netgrid->_nonboundPores) {
+    for (auto &pore: _netgrid->_inletPores)
         _freeCoeffs[pore] = 0;
+    for (auto &pore: _netgrid->_outletPores)
+        _freeCoeffs[pore] = 0;
+    for (auto &pore: _netgrid->_nonboundPores)
+        _freeCoeffs[pore] = 0;
+
+    for (auto &pore: _netgrid->_nonboundPores) {
         auto &poresPores = _netgrid->_poresPores[pore];
         auto &poresThroats = _netgrid->_poresThroats[pore];
-        auto &normals = _netgrid->_normalsPoresThroats[pore];
         for (uint32_t i = 0; i < poresPores.size(); i++)
-            _matrixCoeffs[pore][poresPores[i]] = -normals[i] * _conductances[poresThroats[i]];
+            _matrixCoeffs[pore][poresPores[i]] = -1. * _conductances[poresThroats[i]];
     }
 
 }
@@ -75,9 +80,8 @@ void Pnm::processNewmanPores(std::map<uint32_t, double> &poresFlows) {
         _freeCoeffs[pore] = flow;
         auto poresPores = _netgrid->_poresPores[pore];
         auto poresThroats = _netgrid->_poresThroats[pore];
-        auto &normals = _netgrid->_normalsPoresThroats[pore];
         for (uint32_t i = 0; i < poresPores.size(); i++)
-            _matrixCoeffs[pore][poresPores[i]] = -normals[i] * _conductances[poresThroats[i]];
+            _matrixCoeffs[pore][poresPores[i]] = -1. * _conductances[poresThroats[i]];
     }
 
 }
@@ -121,6 +125,26 @@ void Pnm::fillMatrix(std::map<uint32_t, double> &poresFlows,
 
 }
 
+void Pnm::processCapillaryPressures(const std::vector<double> &capillaryPressures) {
+
+    for (auto &pore: _netgrid->_nonboundPores)
+        for (auto &throat: _netgrid->_poresThroats[pore])
+            _freeCoeffs[pore] -= _netgrid->_normalsPoresThroats[pore][throat] *
+                                 _conductances[throat] * capillaryPressures[throat];
+
+    // ToDo:remove zatychka
+    for (auto &pore: _netgrid->_inletPores)
+        for (auto &throat: _netgrid->_poresThroats[pore])
+            _freeCoeffs[pore] -= _netgrid->_normalsPoresThroats[pore][throat] *
+                                 _conductances[throat] * capillaryPressures[throat];
+
+    for (auto &currPore: _netgrid->_nonboundPores)
+        _freeVector[currPore] = _freeCoeffs[currPore];
+    for (auto &currPore: _netgrid->_inletPores)
+        _freeVector[currPore] = _freeCoeffs[currPore];
+
+}
+
 void Pnm::calculatePress() {
 
     auto &itAccuracy = std::get<double>(_paramsPnm["it_accuracy"]);
@@ -152,6 +176,7 @@ void Pnm::calculatePress() {
 
 void Pnm::cfdProcedure(const std::vector<double> &densities,
                        const std::vector<double> &viscosities,
+                       const std::vector<double> &capillaryPressures,
                        std::map<uint32_t, double> &poresFlows,
                        std::map<uint32_t, double> &poresPressures) {
 
@@ -160,6 +185,7 @@ void Pnm::cfdProcedure(const std::vector<double> &densities,
     processNewmanPores(poresFlows);
     processDirichPores(poresPressures);
     fillMatrix(poresFlows, poresPressures);
+    processCapillaryPressures(capillaryPressures);
 
     calculatePress();
 
@@ -168,10 +194,11 @@ void Pnm::cfdProcedure(const std::vector<double> &densities,
 void Pnm::calcThrsFlowRates() {
 
     for (auto &[throat, conductance] : _conductances) {
-        auto &pore0 = _netgrid->_throatsPores[throat].back();
-        auto &pore1 = _netgrid->_throatsPores[throat].front();
-        _thrsFlowRates[throat] = conductance * abs(_pressures[pore0] - _pressures[pore1]);
+        auto &pore0 = _netgrid->_throatsPores[throat].front();
+        auto &pore1 = _netgrid->_throatsPores[throat].back();
+        _thrsFlowRates[throat] = conductance * (_pressures[pore0] - _pressures[pore1]);
     }
+
 }
 
 void Pnm::calcPoresFlowRates() {

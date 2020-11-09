@@ -39,10 +39,13 @@ public:
     void fillMatrix(std::map<uint32_t, double> &poresFlows,
                     std::map<uint32_t, double> &poresPressures);
 
+    void processCapillaryPressures(const std::vector<double> &capillaryPressures);
+
     void calculatePress();
 
     void cfdProcedure(const std::vector<double> &densities,
                       const std::vector<double> &viscosities,
+                      const std::vector<double> &capillaryPressures,
                       std::map<uint32_t, double> &poresFlows,
                       std::map<uint32_t, double> &poresPressures);
 

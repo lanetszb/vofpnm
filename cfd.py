@@ -24,6 +24,7 @@
 import sys
 import os
 import numpy as np
+import math
 import copy
 import configparser
 import matplotlib.pyplot as plt
@@ -44,10 +45,10 @@ get = __config.get
 #################################
 
 pores_coordinates = {0: [1., 2.], 1: [0., -3.], 2: [5., 0.], 3: [7., 0.],
-                     4: [9., 2.], 5: [10., -3.]}
+                     4: [9., 2.], 5: [9., -2.]}
 throats_pores = {0: [0, 2], 1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [3, 5]}
-throats_widths = {0: 0.1, 1: 0.15, 2: 0.25, 3: 0.15, 4: 0.25}
-throats_depths = {0: 0.45, 1: 0.35, 2: 0.6, 3: 0.35, 4: 0.6}
+throats_widths = {0: 0.1, 1: 0.15, 2: 0.25, 3: 0.15, 4: 0.15}
+throats_depths = {0: 0.45, 1: 0.35, 2: 0.6, 3: 0.25, 4: 0.25}
 delta_L = float(get('Properties_grid', 'delta_L'))
 min_cells_N = np.uint16(get('Properties_grid', 'min_cells_N'))
 
@@ -78,15 +79,16 @@ pore_n = len(netgrid.pores_throats)
 throats_denss = np.tile(paramsPnm['b_gas_dens'], pore_n)
 throats_viscs = np.tile(paramsPnm['gas_visc'], pore_n)
 
-newman_pores_flows = {0: 1.E+4, 1: 1.E+4}
+newman_pores_flows = {0: 5.E+2, 1: 5.E+2}
 dirichlet_pores_pressures = {4: paramsPnm['pressure_out'], 5: paramsPnm['pressure_out']}
 # dirichlet_pores_pressures = {3: pressure_out}
 
 # newman_pores_flows = {}
 # dirichlet_pores_pressures = {0: paramsPnm['pressure_in'], 1: paramsPnm['pressure_in'],
 #                              4: paramsPnm['pressure_out'], 5: paramsPnm['pressure_out']}
+capillary_pressures = np.tile(0., len(netgrid.throats_Ss))
 
-pnm.cfd_procedure(throats_denss, throats_viscs,
+pnm.cfd_procedure(throats_denss, throats_viscs, capillary_pressures,
                   newman_pores_flows, dirichlet_pores_pressures)
 
 pnm.calc_thrs_flow_rates()
@@ -97,6 +99,8 @@ mass_flows = pnm.thrs_flow_rates
 cross_secs = netgrid.throats_Ss
 vol_flows = dict((k, float(mass_flows[k]) / cross_secs[k]) for k in mass_flows)
 velocities = dict((k, float(mass_flows[k]) / paramsPnm['liq_dens']) for k in mass_flows)
+print('velocities: ', velocities)
+print('\n')
 
 #############
 # Testing VoF
@@ -149,6 +153,14 @@ av_sats = equation.throats_av_sats
 av_density = av_sats * paramsPnm['liq_dens'] + (1 - av_sats) * paramsPnm['a_gas_dens']
 av_viscosity = av_sats * paramsPnm['liq_visc'] + (1 - av_sats) * paramsPnm['gas_visc']
 
+contact_angle = float(get('Properties_vof', 'contact_angle'))
+ift = float(get('Properties_vof', 'interfacial_tension'))
+coeff = -2. * math.cos(contact_angle) * ift
+capillary_pressures = dict((k, (coeff / throats_widths[k]) + (coeff / throats_depths[k]))
+                           for k in throats_widths)
+capillary_pressures = list(capillary_pressures.values())
+capillary_pressures = np.array(capillary_pressures)
+
 #################
 # Coupling itself
 #################
@@ -164,13 +176,53 @@ time = [0]
 cour_number = np.empty([])
 time_curr = 0
 
+throats_values = np.arange(netgrid.throats_N, dtype=np.float64)
+cells_values = np.full(netgrid.cells_N, 0, dtype=np.float64)
+
+av_sats_array = []
+equation.calc_throats_av_sats()
+netgrid.throats_values_to_cells(equation.throats_av_sats, cells_values)
+av_sats_array.append(copy.deepcopy(cells_values))
+
+sats_grads_array = []
+equation.calc_throats_sats_grads()
+netgrid.throats_values_to_cells(equation.throats_sats_grads, cells_values)
+sats_grads_array.append(copy.deepcopy(cells_values))
+print('\n')
+
+capillary_pressures_array = []
+capillary_coeffs = copy.deepcopy(equation.throats_sats_grads)
+threshold = 0.001
+capillary_coeffs = np.where(capillary_coeffs > threshold, 1, capillary_coeffs)
+capillary_coeffs = np.where(capillary_coeffs <= threshold, 0, capillary_coeffs)
+capillary_coeffs = np.where(capillary_coeffs < -threshold, -1, capillary_coeffs)
+capillary_pressures_curr = np.multiply(capillary_coeffs, capillary_pressures)
+netgrid.throats_values_to_cells(capillary_pressures_curr, cells_values)
+capillary_pressures_array.append(copy.deepcopy(cells_values))
+
 for time_step in local.time_steps:
     time_curr += time_step
     equation.cfd_procedure_one_step(velocities, time_step)
+    equation.calc_throats_av_sats()
+    equation.calc_throats_sats_grads()
 
     av_sats = equation.throats_av_sats
+    netgrid.throats_values_to_cells(equation.throats_av_sats, cells_values)
+    av_sats_array.append(copy.deepcopy(cells_values))
     av_density = av_sats * paramsPnm['liq_dens'] + (1 - av_sats) * paramsPnm['a_gas_dens']
     av_viscosity = av_sats * paramsPnm['liq_visc'] + (1 - av_sats) * paramsPnm['gas_visc']
+
+    netgrid.throats_values_to_cells(equation.throats_sats_grads, cells_values)
+    sats_grads_array.append(copy.deepcopy(cells_values))
+    capillary_coeffs = copy.deepcopy(equation.throats_sats_grads)
+    threshold = 0.001
+    capillary_coeffs = np.where(capillary_coeffs > threshold, 1, capillary_coeffs)
+    capillary_coeffs = np.where(capillary_coeffs <= threshold, 0, capillary_coeffs)
+    capillary_coeffs = np.where(capillary_coeffs < -threshold, -1, capillary_coeffs)
+
+    capillary_pressures_curr = np.multiply(capillary_coeffs, capillary_pressures)
+    netgrid.throats_values_to_cells(capillary_pressures_curr, cells_values)
+    capillary_pressures_array.append(copy.deepcopy(cells_values))
 
     sats_curr = copy.deepcopy(equation.sats[equation.i_curr])
     sats_time.append(sats_curr)
@@ -179,8 +231,11 @@ for time_step in local.time_steps:
     equation.print_cour_numbers(velocities, time_step)
     print(' time:', round((time_curr / time_period * 1000 * 0.1), 2), '%.')
 
-    pnm.cfd_procedure(av_density, av_viscosity,
+    pnm.cfd_procedure(av_density, av_viscosity, capillary_pressures_curr,
                       newman_pores_flows, dirichlet_pores_pressures)
+    print('capillary_pressures_curr: ', capillary_pressures_curr)
+    print('velocities: ', velocities)
+    print('\n')
 
     pnm.calc_thrs_flow_rates()
     pnm.calc_pores_flow_rates()
@@ -202,7 +257,10 @@ files_names = list()
 files_descriptions = list()
 
 for i in range(len(time)):
-    netgrid.cells_arrays = {'sat': sats_time[i]}
+    netgrid.cells_arrays = {'sat': sats_time[i],
+                            'sat_av': av_sats_array[i],
+                            'sat_grad': sats_grads_array[i],
+                            'capillary_Ps': capillary_pressures_array[i]}
     files_names.append(str(i) + '_refined.vtu')
     files_descriptions.append(str(i))
     netgrid.save_cells('inOut/' + files_names[i])

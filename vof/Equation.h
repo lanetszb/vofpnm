@@ -68,6 +68,10 @@ public:
 
     void setThroatsAvSats(Eigen::Ref<Eigen::VectorXd> throatsAvSats);
 
+    Eigen::Ref<Eigen::VectorXd> getThroatsSatsGrads();
+
+    void setThroatsSatsGrads(Eigen::Ref<Eigen::VectorXd> throatsSatsGrads);
+
     void processDirichCells(std::vector<std::string> &boundGroups,
                             std::map<std::string, double> &satsBound);
 
@@ -80,6 +84,10 @@ public:
     void fillMatrix();
 
     void calcSatsImplicit();
+
+    void calcThroatsAvSats();
+
+    void calcThroatsSatsGrads();
 
     void cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
                              const double &timeStep);
@@ -116,6 +124,7 @@ public:
     Matrix matrix;
     Eigen::Map<Eigen::VectorXd> freeVector;
     Eigen::Map<Eigen::VectorXd> _throatsAvSats;
+    Eigen::Map<Eigen::VectorXd> _throatsSatsGrads;
 
 
 };

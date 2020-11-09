@@ -80,6 +80,9 @@ PYBIND11_MODULE(vof_bind, m) {
 
             .def("fill_matrix", &Equation::fillMatrix)
             .def("calc_sats_implicit", &Equation::calcSatsImplicit)
+            .def("calc_sats_implicit", &Equation::calcSatsImplicit)
+            .def("calc_throats_av_sats", &Equation::calcThroatsAvSats)
+            .def("calc_throats_sats_grads", &Equation::calcThroatsSatsGrads)
             .def("cfd_procedure_one_step", &Equation::cfdProcedureOneStep,
                  "thrs_velocities"_a, "timeStep"_a)
             .def("print_cour_numbers", &Equation::printCourNumbers,
@@ -106,8 +109,9 @@ PYBIND11_MODULE(vof_bind, m) {
                           &Equation::getSats, &Equation::setSats)
             .def_property("throats_av_sats",
                           &Equation::getThroatsAvSats, &Equation::setThroatsAvSats)
+            .def_property("throats_sats_grads",
+                          &Equation::getThroatsSatsGrads, &Equation::setThroatsSatsGrads)
             .def_property("sats_time",
                           &Equation::getSatsTime, &Equation::setSatsTime);
-
 
 }
