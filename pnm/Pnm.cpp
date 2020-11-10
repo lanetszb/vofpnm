@@ -179,10 +179,11 @@ void Pnm::cfdProcedure(const std::vector<double> &densities,
 void Pnm::calcThroatsMassFlows(const std::vector<double> &capillaryPressures) {
 
     for (auto &[throat, conductance] : _conductances) {
-        auto &pore0 = _netgrid->_throatsPores[throat].front();
-        auto &pore1 = _netgrid->_throatsPores[throat].back();
-        _throatsMassFlows[throat] = conductance * (_pressures[pore0] - _pressures[pore1] +
-                                                   capillaryPressures[throat]);
+        auto &pores = _netgrid->_throatsPores[throat];
+        auto &normals = _netgrid->_normalsThroatsPores[throat];
+        _throatsMassFlows[throat] = conductance * capillaryPressures[throat];
+        for (uint32_t i = 0; i < pores.size(); i++)
+            _throatsMassFlows[throat] -= normals[i] * conductance * _pressures[pores[i]];
     }
 
 }

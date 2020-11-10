@@ -179,9 +179,9 @@ if __name__ == '__main__':
     cfd = Cfd(config_file=sys.argv[1])
     cfd.calc_coupling_params()
 
-    cfd.newman_pores_flows = {0: 10., 1: 10.}
-    cfd.dirichlet_pores_pressures = {4: cfd.paramsPnm['pressure_out'],
-                                     5: cfd.paramsPnm['pressure_out']}
+    # cfd.newman_pores_flows = {0: 10.E-2, 1: 10.E-2}
+    # cfd.dirichlet_pores_pressures = {4: cfd.paramsPnm['pressure_out'],
+    #                                  5: cfd.paramsPnm['pressure_out']}
     cfd.run_pnm()
 
     pressures_array = []
@@ -214,9 +214,9 @@ if __name__ == '__main__':
         cfd.run_pnm()
         cfd.pores_values_to_cells(pressures_array, cfd.pnm.pressures)
 
-        for pores in cfd.netgrid.throats_pores.values():
-            print('press_grad:', cfd.pnm.pressures[pores[0]] - cfd.pnm.pressures[pores[1]])
-            print('pores: ', pores[0], pores[1])
+        # for pores in cfd.netgrid.throats_pores.values():
+            # print('press_grad:', cfd.pnm.pressures[pores[0]] - cfd.pnm.pressures[pores[1]])
+            # print('pores: ', pores[0], pores[1])
         print('P_c:', cfd.capillary_pressures)
         print('velocities: ', cfd.velocities)
         print('mass_rates:', cfd.pnm.throats_flow_rates)
