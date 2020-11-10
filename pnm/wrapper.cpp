@@ -26,12 +26,13 @@ PYBIND11_MODULE(pnm_bind, m) {
                  "pores_pressures"_a)
             .def("fill_matrix", &Pnm::fillMatrix,
                  "pores_flows"_a,
-                 "pores_pressures"_a)
+                 "pores_pressures"_a,
+                 "capillary_pressures"_a)
             .def("print_params_pnm", &Pnm::printParamsPnm)
             .def("cfd_procedure", &Pnm::cfdProcedure,
-                 "densities"_a, "viscosities"_a, "capillaryPressures"_a,
+                 "densities"_a, "viscosities"_a, "capillary_pressures"_a,
                  "poresFlows"_a, "poresPressures"_a)
-            .def("calc_throats_flow_rates", &Pnm::calcThroatsFlowRates,
+            .def("calc_throats_flow_rates", &Pnm::calcThroatsMassFlows,
                  "capillary_pressures"_a)
             .def("calc_pores_flow_rates", &Pnm::calcPoresFlowRates)
             .def("calc_total_flow_rate", &Pnm::calcTotalFlowRate)
@@ -41,7 +42,7 @@ PYBIND11_MODULE(pnm_bind, m) {
             .def_readwrite("conductances", &Pnm::_conductances)
             .def_readwrite("matrix_coeffs", &Pnm::_matrixCoeffs)
             .def_readwrite("free_coeffs", &Pnm::_freeCoeffs)
-            .def_readwrite("throats_flow_rates", &Pnm::_throatsFlowRates)
+            .def_readwrite("throats_flow_rates", &Pnm::_throatsMassFlows)
             .def_readwrite("pores_flow_rates", &Pnm::_poresFlowRates)
             .def_readwrite("total_flow_rate", &Pnm::_totFlowRate)
 

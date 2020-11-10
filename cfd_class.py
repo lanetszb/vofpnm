@@ -138,8 +138,6 @@ class Cfd:
         s.velocities = dict((k, float(mass_flows[k]) / cross_secs[k] / s.throats_denss[k])
                             for k in mass_flows)
 
-        print(s.velocities)
-
     def calc_coupling_params(s):
         s.equation.calc_throats_av_sats()
         s.equation.calc_throats_sats_grads()
@@ -150,8 +148,8 @@ class Cfd:
         s.av_viscosity = s.av_sats * s.paramsPnm['liq_visc'] + \
                          (1 - s.av_sats) * s.paramsPnm['gas_visc']
 
-        # coeff = 2. * abs(math.cos(s.contact_angle)) * s.ift
-        coeff = 0.
+        coeff = 2. * abs(math.cos(s.contact_angle)) * s.ift
+        # coeff = 0.
         # ToDo: make more readable
         s.capillary_pressures = dict((k, (coeff / s.throats_widths[k]) +
                                       (coeff / s.throats_depths[k]))
@@ -181,7 +179,7 @@ if __name__ == '__main__':
     cfd = Cfd(config_file=sys.argv[1])
     cfd.calc_coupling_params()
 
-    cfd.newman_pores_flows = {0: 2.E-1, 1: 2.E-1}
+    cfd.newman_pores_flows = {0: 10., 1: 10.}
     cfd.dirichlet_pores_pressures = {4: cfd.paramsPnm['pressure_out'],
                                      5: cfd.paramsPnm['pressure_out']}
     cfd.run_pnm()
@@ -218,6 +216,7 @@ if __name__ == '__main__':
 
         for pores in cfd.netgrid.throats_pores.values():
             print('press_grad:', cfd.pnm.pressures[pores[0]] - cfd.pnm.pressures[pores[1]])
+            print('pores: ', pores[0], pores[1])
         print('P_c:', cfd.capillary_pressures)
         print('velocities: ', cfd.velocities)
         print('mass_rates:', cfd.pnm.throats_flow_rates)

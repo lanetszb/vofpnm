@@ -39,9 +39,8 @@ public:
     void processDirichPores(std::map<uint32_t, double> &poresPressures);
 
     void fillMatrix(std::map<uint32_t, double> &poresFlows,
-                    std::map<uint32_t, double> &poresPressures);
-
-    void processCapillaryPressures(const std::vector<double> &capillaryPressures);
+                    std::map<uint32_t, double> &poresPressures,
+                    const std::vector<double> &capillaryPressures);
 
     void calculatePress();
 
@@ -51,7 +50,7 @@ public:
                       std::map<uint32_t, double> &poresFlows,
                       std::map<uint32_t, double> &poresPressures);
 
-    void calcThroatsFlowRates(const std::vector<double> &capillaryPressures);
+    void calcThroatsMassFlows(const std::vector<double> &capillaryPressures);
 
     void calcPoresFlowRates();
 
@@ -69,7 +68,7 @@ public:
     std::map<uint32_t, double> _freeCoeffs;
     std::map<uint32_t, std::map<uint32_t, double>> _matrixCoeffs;
 
-    std::map<uint32_t, double> _throatsFlowRates;
+    std::map<uint32_t, double> _throatsMassFlows;
     std::map<uint32_t, double> _poresFlowRates;
 
     double _totFlowRate;
