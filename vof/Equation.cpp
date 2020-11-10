@@ -163,11 +163,10 @@ void Equation::printCourNumbers(std::map<uint32_t, double> &thrsVelocities,
     std::vector<double> courNumber;
 
     for (auto &[throat, velocity]: thrsVelocities)
-        courNumber.push_back(velocity * timeStep / _netgrid->_throatsDLs[throat]);
+        courNumber.push_back(fabs(velocity) * timeStep / _netgrid->_throatsDLs[throat]);
 
     auto &maxCour = *max_element(courNumber.begin(), courNumber.end());
-    auto avCour =
-            accumulate(courNumber.begin(), courNumber.end(), 0.0) / courNumber.size();
+    auto avCour = accumulate(courNumber.begin(), courNumber.end(), 0.0) / courNumber.size();
 
     std::cout << "maxCour: " << maxCour << "; avCour: " << avCour;
 

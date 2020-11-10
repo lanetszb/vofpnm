@@ -49,7 +49,7 @@ public:
                       std::map<uint32_t, double> &poresFlows,
                       std::map<uint32_t, double> &poresPressures);
 
-    void calcThrsFlowRates();
+    void calcThroatsFlowRates(const std::vector<double> &capillaryPressures);
 
     void calcPoresFlowRates();
 
@@ -67,7 +67,7 @@ public:
     std::map<uint32_t, double> _freeCoeffs;
     std::map<uint32_t, std::map<uint32_t, double>> _matrixCoeffs;
 
-    std::map<uint32_t, double> _thrsFlowRates;
+    std::map<uint32_t, double> _throatsFlowRates;
     std::map<uint32_t, double> _poresFlowRates;
 
     double _totFlowRate;

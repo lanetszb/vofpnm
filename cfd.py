@@ -98,7 +98,7 @@ pnm.calc_pores_flow_rates()
 mass_flows = pnm.thrs_flow_rates
 cross_secs = netgrid.throats_Ss
 vol_flows = dict((k, float(mass_flows[k]) / cross_secs[k]) for k in mass_flows)
-velocities = dict((k, float(mass_flows[k]) / paramsPnm['liq_dens']) for k in mass_flows)
+velocities = dict((k, float(vol_flows[k]) / paramsPnm['liq_dens']) for k in vol_flows)
 print('velocities: ', velocities)
 print('\n')
 
@@ -176,7 +176,6 @@ time = [0]
 cour_number = np.empty([])
 time_curr = 0
 
-throats_values = np.arange(netgrid.throats_N, dtype=np.float64)
 cells_values = np.full(netgrid.cells_N, 0, dtype=np.float64)
 
 av_sats_array = []
