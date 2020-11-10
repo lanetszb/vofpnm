@@ -56,6 +56,14 @@ void Pnm::calcConductances(const std::vector<double> &densities,
 
 }
 
+void Pnm::processThroats() {
+    for (auto&[throat, pores] : _netgrid->_throatsPores) {
+        auto &normals = _netgrid->_normalsThroatsPores[throat];
+        for (uint32_t i = 0; i < pores.size(); i++)
+            _matrixCoeffs[throat][pores[i]] = normals[i] * _conductances[throat];
+    }
+}
+
 void Pnm::processNonboundPores() {
 
     for (auto &pore: _netgrid->_inletPores)
@@ -64,39 +72,17 @@ void Pnm::processNonboundPores() {
         _freeCoeffs[pore] = 0;
     for (auto &pore: _netgrid->_nonboundPores)
         _freeCoeffs[pore] = 0;
-
-    for (auto &pore: _netgrid->_nonboundPores) {
-        auto &poresPores = _netgrid->_poresPores[pore];
-        auto &poresThroats = _netgrid->_poresThroats[pore];
-        auto &normalsPoresThroats = _netgrid->_normalsPoresThroats[pore];
-        for (uint32_t i = 0; i < poresPores.size(); i++)
-            _matrixCoeffs[pore][poresPores[i]] =
-                    normalsPoresThroats[i] * _conductances[poresThroats[i]];
-    }
-
 }
 
 void Pnm::processNewmanPores(std::map<uint32_t, double> &poresFlows) {
-
-    for (auto &[pore, flow]: poresFlows) {
+    // ToDo: make sure it is ok with flow sign
+    for (auto &[pore, flow]: poresFlows)
         _freeCoeffs[pore] = flow;
-        auto poresPores = _netgrid->_poresPores[pore];
-        auto poresThroats = _netgrid->_poresThroats[pore];
-        auto &normalsPoresThroats = _netgrid->_normalsPoresThroats[pore];
-        for (uint32_t i = 0; i < poresPores.size(); i++)
-            _matrixCoeffs[pore][poresPores[i]] =
-                    normalsPoresThroats[i] * _conductances[poresThroats[i]];
-    }
-
 }
 
 void Pnm::processDirichPores(std::map<uint32_t, double> &poresPressures) {
-
-    for (auto &[pore, pressure]: poresPressures) {
-        _matrixCoeffs[pore][pore] = 1.;
+    for (auto &[pore, pressure]: poresPressures)
         _freeCoeffs[pore] = pressure;
-    }
-
 }
 
 void Pnm::fillMatrix(std::map<uint32_t, double> &poresFlows,
@@ -106,25 +92,31 @@ void Pnm::fillMatrix(std::map<uint32_t, double> &poresFlows,
         for (MatrixIterator it(_matrix, i); it; ++it)
             it.valueRef() = 0;
 
-    for (auto &currPore: _netgrid->_nonboundPores) {
-        _freeVector[currPore] = _freeCoeffs[currPore];
-        for (auto &[neigbPore, conductance]: _matrixCoeffs[currPore]) {
-            _matrix.coeffRef(currPore, neigbPore) = conductance;
-            _matrix.coeffRef(currPore, currPore) -= conductance;
-        }
+    for (auto &pore: _netgrid->_nonboundPores) {
+        _freeVector[pore] = _freeCoeffs[pore];
+        auto &pores = _netgrid->_poresPores[pore];
+        auto &throats = _netgrid->_poresThroats[pore];
+        auto &normals = _netgrid->_normalsPoresThroats[pore];
+        for (uint32_t i = 0; i < throats.size(); i++)
+            for (auto &poreCurr : _netgrid->_throatsPores[throats[i]])
+                _matrix.coeffRef(pore, poreCurr) +=
+                        normals[i] * _matrixCoeffs[throats[i]][poreCurr];
     }
 
-    for (auto &[currPore, flow]: poresFlows) {
-        _freeVector[currPore] = _freeCoeffs[currPore];
-        for (auto &[neigbPore, conductance]: _matrixCoeffs[currPore]) {
-            _matrix.coeffRef(currPore, neigbPore) = conductance;
-            _matrix.coeffRef(currPore, currPore) -= conductance;
-        }
+    for (auto &[pore, flow]: poresFlows) {
+        _freeVector[pore] = _freeCoeffs[pore];
+        auto &pores = _netgrid->_poresPores[pore];
+        auto &throats = _netgrid->_poresThroats[pore];
+        auto &normals = _netgrid->_normalsPoresThroats[pore];
+        for (uint32_t i = 0; i < throats.size(); i++)
+            for (auto &poreCurr : _netgrid->_throatsPores[throats[i]])
+                _matrix.coeffRef(pore, poreCurr) +=
+                        normals[i] * _matrixCoeffs[throats[i]][poreCurr];
     }
 
-    for (auto &[currPore, pressure]: poresPressures) {
-        _matrix.coeffRef(currPore, currPore) = _matrixCoeffs[currPore][currPore];
-        _freeVector[currPore] = _freeCoeffs[currPore];
+    for (auto &[pore, pressure]: poresPressures) {
+        _freeVector[pore] = _freeCoeffs[pore];
+        _matrix.coeffRef(pore, pore) = 1;
     }
 
     std::cout << _matrix << std::endl;
@@ -186,6 +178,7 @@ void Pnm::cfdProcedure(const std::vector<double> &densities,
                        std::map<uint32_t, double> &poresPressures) {
 
     calcConductances(densities, viscosities);
+    processThroats();
     processNonboundPores();
     processNewmanPores(poresFlows);
     processDirichPores(poresPressures);

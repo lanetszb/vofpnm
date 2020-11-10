@@ -30,6 +30,8 @@ public:
     void calcConductances(const std::vector<double> &densities,
                           const std::vector<double> &viscosities);
 
+    void processThroats();
+
     void processNonboundPores();
 
     void processNewmanPores(std::map<uint32_t, double> &poresFlows);
