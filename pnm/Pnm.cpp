@@ -123,11 +123,7 @@ void Pnm::fillMatrix(std::map<uint32_t, double> &poresFlows,
         _freeVector[pore] = _freeCoeffs[pore];
         _matrix.coeffRef(pore, pore) = 1;
     }
-    std::cout << std::endl;
-    std::cout << _matrix << std::endl;
-    for (int i = 0; i < _freeVector.size(); i++)
-        std::cout << _freeVector[i] << ' ';
-    std::cout << std::endl;
+
 }
 
 void Pnm::calculatePress() {

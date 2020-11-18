@@ -103,6 +103,7 @@ PYBIND11_MODULE(vof_bind, m) {
             .def_readwrite("bound_groups_newman", &Equation::_boundGroupsNewman)
             .def_readwrite("sats_bound_dirich", &Equation::_satsBoundDirich)
             .def_readwrite("time", &Equation::_time)
+            .def_readwrite("matrix", &Equation::matrix)
             .def_property("sats_ini",
                           &Equation::getSatsIni, &Equation::setSatsIni)
             .def_property("sats",

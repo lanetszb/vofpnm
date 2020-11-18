@@ -40,6 +40,7 @@ typedef Eigen::Triplet<double> Triplet;
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> Matrix;
 typedef Matrix::InnerIterator MatrixIterator;
 typedef Eigen::BiCGSTAB<Eigen::SparseMatrix<double>> BiCGSTAB;
+typedef Eigen::SparseLU<Eigen::SparseMatrix<double>> SparseLU;
 
 class Equation {
 
