@@ -304,6 +304,65 @@ P^{n+1}_{m} = P^{out}   : m \in outlet,
 \end{eqnarray}
 
 \newpage
+\section*{VoF-PNM}
+
+\begin{eqnarray}
+\label{one_phase} 
+\begin{gathered}
+\sum^{N_{i}}_{j=1, \; i\neq j} Q_{ij} = 0,
+\end{gathered}
+\end{eqnarray}
+%
+\begin{eqnarray}
+\begin{gathered}
+\label{press_bound}
+P_{m} = P^{in}   : m \in inlet, \;\;
+P_{m} = P^{out}   :m \in outlet,
+\end{gathered}
+\end{eqnarray}
+%
+ \begin{eqnarray}
+\begin{gathered}
+\label{eq:twophase_mass_flux}
+Q_{ij} = \frac{P_{i} - P_{j} + \Delta P_{ij}}{R_{ij}},
+\end{gathered}
+\end{eqnarray}
+%
+ \begin{eqnarray}
+\begin{gathered}
+\label{eq:twophase_mass_hydr_conductance}
+R = \frac{12 \bar{\mu} L}{h^{3} \omega},
+\end{gathered}
+\end{eqnarray}
+%
+\begin{eqnarray}
+\begin{gathered}
+Q_{in/out} = \frac{G_{in/out}}{\rho_{in/out}}.
+\end{gathered}
+\end{eqnarray}
+%
+\begin{eqnarray}
+\begin{gathered}
+k = a \frac{Q_{in/out}}{A} \frac{\mu L}{P_{in} - P_{out}},
+\end{gathered}
+\end{eqnarray}
+%
+\begin{eqnarray}
+\begin{gathered}
+a =\begin{cases}
+\frac{\rho_{in/out}}{\bar{\rho}}: &\text{pseudo compressible},\\
+\frac{2P_{in/out}}{P_{in} + P_{out}}: &\text{ideal gas},
+\end{cases}
+\end{gathered}
+\end{eqnarray}
+%
+\begin{eqnarray}
+\begin{gathered}
+\bar{\rho}=\frac{1}{P_{in}-P_{out}} \int\limits^{P_{in}}_{P_{out}}\rho \; dP.
+\end{gathered}
+\end{eqnarray}
+
+\newpage
  \section*{Two-phase pore network model (coupling of  PNM and DFS)}
  
  \subsection*{Model description:} \label{s1}
@@ -425,28 +484,28 @@ Relative permeability estimation:
  \begin{eqnarray}
 \label{eq:water_velocity}
 \begin{gathered}
-\bar{v}\bar{S}_w\frac{\bar{\mu}}{\mu_w} = -\frac{k k_{rw}}{\mu_w} \frac{\Delta P}{\Delta L}
+\bar{v}\bar{S}_w = -\frac{k k_{rw}}{\mu_w} \frac{\Delta P}{\Delta L}
 \end{gathered}
 \end{eqnarray}
 
  \begin{eqnarray}
 \label{eq:gas_velocity}
 \begin{gathered}
-\bar{v} \left(1-\bar{S}_w\right)\frac{\bar{\mu}}{\mu_g} = -\frac{k k_{rg}}{\mu_g} \frac{\Delta P}{\Delta L}
+\bar{v} \left(1-\bar{S}_w\right) = -\frac{k k_{rg}}{\mu_g} \frac{\Delta P}{\Delta L}
 \end{gathered}
 \end{eqnarray}
 
  \begin{eqnarray}
 \label{eq:water_rel}
 \begin{gathered}
-k_{rw}=\bar{S}_w\frac{\bar{\mu}}{\mu_g}\frac{\bar{v}}{v_g}
+k_{rw}=\bar{S}_w\frac{\mu_w}{\mu_g}\frac{\bar{v}}{v_g}
 \end{gathered}
 \end{eqnarray}
 
  \begin{eqnarray}
 \label{eq:water_rel}
 \begin{gathered}
-k_{rg}=\left(1-\bar{S}_w\right) \frac{\bar{\mu}}{\mu_g}\frac{\bar{v}}{v_g}
+k_{rg}=\left(1-\bar{S}_w\right)\frac{\bar{v}}{v_g}
 \end{gathered}
 \end{eqnarray}
 
@@ -461,16 +520,8 @@ k_{rg}=\left(1-\bar{S}_w\right) \frac{\bar{\mu}}{\mu_g}\frac{\bar{v}}{v_g}
 \label{eq:twophase_dens_visc_model}
 \begin{gathered}
 \bar{\rho} = \bar{S}_{w} \rho_w+ \left(1-\bar{S}_w\right) \rho_g, \\
-\bar{\mu} = \bar{S}_{w} \mu_w+ \left(1-\bar{S}_w\right) \mu_g, \\
+\bar{\mu} = \bar{S}_{w} \mu_w+ \left(1-\bar{S}_w\right) \mu_g. \\
 \end{gathered}
 \end{eqnarray}
-
-\begin{eqnarray}
-\label{eq:twophase_dens_visc_model}
-\begin{gathered}
-\bar{v} = v^{\left(in\right)}\frac{\rho^{\left(in\right)}}{\bar{\rho}}.
-\end{gathered}
-\end{eqnarray}
-
 
 \end{document}
