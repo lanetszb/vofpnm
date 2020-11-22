@@ -228,7 +228,6 @@ void Equation::calcThroatsSatsGrads() {
 
 void Equation::cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
                                    const double &timeStep) {
-
     std::swap(iCurr, iPrev);
 
     _convective->calcBetas(thrsVelocities);
