@@ -407,9 +407,9 @@ if __name__ == '__main__':
     files_names = list()
     files_descriptions = list()
 
-    step = 1
+    freq = 1
     for i in range(len(time)):
-        if (i % step) == 0:
+        if (i % freq) == 0:
             cfd.netgrid.cells_arrays = {'sat': cfd.sats_time[i],
                                         'sat_av': av_sats_array[i],
                                         'sat_grad': sats_grads_array[i],
