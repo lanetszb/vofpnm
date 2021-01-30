@@ -173,9 +173,23 @@ void Equation::fillMatrix() {
 
 void Equation::calcSatsImplicit() {
 
-    // BiCGSTAB biCGSTAB;
-    // biCGSTAB.compute(matrix);
-    // _sats[iCurr] = biCGSTAB.solveWithGuess(freeVector, _sats[iPrev]);
+    //   BiCGSTAB biCGSTAB;
+    //   biCGSTAB.compute(matrix);
+    //   _sats[iCurr] = biCGSTAB.solveWithGuess(freeVector, _sats[iPrev]);
+
+    // for (auto &[face, cells]: _matrixFacesCells) {
+    //     for (auto &[cell, coeffs]: cells) {
+    //         std::cout << face        // string (key)
+    //                   << ':'
+    //                   << cell
+    //                   << ':'
+    //                   << coeffs   // string's value
+    //                   << std::endl;
+    //     }
+    // }
+
+    // for (auto &coeff: _local->_alphas)
+    //     std::cout << coeff << std::endl;
 
     SparseLU sparseLU;
     sparseLU.compute(matrix);
@@ -232,11 +246,10 @@ void Equation::cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
 
     _convective->calcBetas(thrsVelocities);
     _local->calcAlphas(timeStep);
-
     processNonBoundFaces(_netgrid->_typesFaces.at("nonbound"));
-    for (auto &faces: _boundGroupsNewman)
+    for (auto &faces: _boundGroupsNewman) {
         processNonBoundFaces(_netgrid->_typesFaces.at(faces));
-
+    }
 
     fillMatrix();
     processDirichCells(_boundGroupsDirich, _satsBoundDirich);
