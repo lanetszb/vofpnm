@@ -44,6 +44,27 @@ void Local::calcTimeSteps() {
         _timeSteps.push_back(lastStep * timeStep);
 }
 
+double Local::calcVariableTimeStep(const double &timeCurr,
+                                   std::map<uint32_t, double> &thrsVelocities) {
+
+    auto &timePeriod = std::get<double>(_props->_params["time_period"]);
+    auto &maxCourant = std::get<double>(_props->_params["max_courant"]);
+
+    std::vector<double> values;
+    for (auto &[throat, velocity]: thrsVelocities)
+        values.push_back(_netgrid->_throatsDLs[throat] / fabs(velocity));
+    auto &min = *min_element(values.begin(), values.end());
+
+    double timeStep = maxCourant * min;
+
+    // if (timeCurr + timeStep > timePeriod)
+    //     timeStep = timePeriod - timeCurr;
+
+    // _timeSteps.push_back(timeStep);
+
+    return timeStep;
+}
+
 void Local::calcAlphas(const double &timeStep) {
 
     for (auto &[throat, cells] : _netgrid->_throatsCells)

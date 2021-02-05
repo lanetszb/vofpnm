@@ -89,7 +89,8 @@ void Equation::processNonBoundFaces(const std::set<uint32_t> &faces) {
         }
 
         for (auto &i : upwindCellsIdxs) {
-            _matrixFacesCells[face][cells[i]] = _convective->_betas[face] * upwindBetas[i] / sumUpwindBetas;
+            _matrixFacesCells[face][cells[i]] =
+                    _convective->_betas[face] * upwindBetas[i] / sumUpwindBetas;
             _freeFacesCells[face][cells[i]] = 0;
         }
 
@@ -193,15 +194,21 @@ void Equation::calcSatsImplicit() {
 void Equation::printCourNumbers(std::map<uint32_t, double> &thrsVelocities,
                                 const double &timeStep) {
 
-    std::vector<double> courNumber;
+    std::vector<double> values;
 
     for (auto &[throat, velocity]: thrsVelocities)
-        courNumber.push_back(fabs(velocity) * timeStep / _netgrid->_throatsDLs[throat]);
+        values.push_back(fabs(velocity) * timeStep / _netgrid->_throatsDLs[throat]);
 
-    auto &maxCour = *max_element(courNumber.begin(), courNumber.end());
-    auto avCour = accumulate(courNumber.begin(), courNumber.end(), 0.0) / courNumber.size();
+    auto &max = *max_element(values.begin(), values.end());
+    auto &min = *min_element(values.begin(), values.end());
+    auto mean = accumulate(values.begin(), values.end(), 0.0) / values.size();
+    double sq_sum = std::inner_product(values.begin(), values.end(), values.begin(), 0.);
+    double stdev = std::sqrt(sq_sum / values.size() - mean * mean);
 
-    std::cout << "maxCour: " << maxCour << "; avCour: " << avCour;
+
+    std::cout << "min: " << min << "; max: " << max << "; mean: " << mean << "; stdev: " << stdev;
+    std::cout << std::endl;
+    std::cout << fabs(thrsVelocities[0]) * timeStep / _netgrid->_throatsDLs[0];
 
 }
 

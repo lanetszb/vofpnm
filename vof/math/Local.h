@@ -43,6 +43,9 @@ public:
 
     void calcTimeSteps();
 
+    double calcVariableTimeStep(const double &timeCurr,
+                                std::map<uint32_t, double> &thrsVelocities);
+
     void calcAlphas(const double &timeStep);
 
     std::shared_ptr<Props> _props;

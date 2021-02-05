@@ -48,25 +48,16 @@ class Cfd:
         # creating grid with Netgrid
         #################################
 
-        # Test model Jing
         s.pores_coordinates = literal_eval(s.__config['Properties_grid']['pores_coordinates'])
         s.throats_pores = literal_eval(s.__config['Properties_grid']['throats_pores'])
         s.throats_widths = literal_eval(s.__config['Properties_grid']['throats_widths'])
         s.throats_depths = literal_eval(s.__config['Properties_grid']['throats_depths'])
         s.inlet_pores = literal_eval(s.__config['Properties_grid']['inlet_pores'])
         s.outlet_pores = literal_eval(s.__config['Properties_grid']['outlet_pores'])
+        s.inlet_throats = literal_eval(s.__config['Properties_grid']['inlet_throats'])
+        s.outlet_throats = literal_eval(s.__config['Properties_grid']['outlet_throats'])
         s.delta_L = float(get('Properties_grid', 'delta_L'))
         s.min_cells_N = np.uint16(get('Properties_grid', 'min_cells_N'))
-
-        s.inlet_throats = np.array([0, 1])
-        s.outlet_throats = np.array([3, 4])
-
-        # s.inlet_throats = np.array([0, 1, 2, 3, 4, 5, 6])
-        # s.outlet_throats = np.array([13, 14, 15, 16, 17, 18])
-
-        # Test model quadratic
-        # s.inlet_throats = np.array([41])
-        # s.outlet_throats = np.array([40])
 
         s.netgrid = Netgrid(s.pores_coordinates, s.throats_pores,
                             s.throats_widths, s.throats_depths, s.delta_L, s.min_cells_N,
@@ -85,24 +76,25 @@ class Cfd:
                        'it_accuracy': float(get('Properties_simulation', 'it_accuracy')),
                        'solver_method': str(get('Properties_simulation', 'solver_method'))}
 
-        s.pore_n = len(s.pores_coordinates)
-        s.throats_denss = np.tile(s.paramsPnm['b_gas_dens'], len(s.netgrid.throats_Ss))
-        s.throats_viscs = np.tile(s.paramsPnm['gas_visc'], len(s.netgrid.throats_Ss))
-        s.capillary_pressures = np.tile(0., len(s.netgrid.throats_Ss))
+        s.pore_n = s.netgrid.pores_N
+        s.throats_denss = np.tile(s.paramsPnm['b_gas_dens'], s.netgrid.throats_N)
+        s.throats_viscs = np.tile(s.paramsPnm['gas_visc'], s.netgrid.throats_N)
+        s.capillary_pressures = np.tile(0., s.netgrid.throats_N)
+
         s.newman_pores_flows = {}
         s.dirichlet_pores_pressures = {}
-
         for pore in s.inlet_pores:
             s.dirichlet_pores_pressures[pore] = s.paramsPnm['pressure_in']
         for pore in s.outlet_pores:
             s.dirichlet_pores_pressures[pore] = s.paramsPnm['pressure_out']
 
         s.throats_volumes = np.array(list(dict(
-            (k, float(s.netgrid.throats_Ss[k] * s.netgrid.throats_Ls[k]))
-            for k in s.netgrid.throats_Ss).values()))
+            (throat, float(s.netgrid.throats_Ss[throat] * s.netgrid.throats_Ls[throat]))
+            for throat in s.netgrid.throats_Ss).values()))
 
         s.pnm = Pnm(s.paramsPnm, s.netgrid)
         s.velocities = None
+
         #############
         # VOF
         #############
@@ -110,9 +102,11 @@ class Cfd:
         s.sat_inlet = float(get('Properties_vof', 'sat_inlet'))
         s.sat_outlet = float(get('Properties_vof', 'sat_outlet'))
 
+        # fill the first cell in the inlet throats
         s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
         for i in s.netgrid.types_cells['inlet']:
             s.sats_curr[i] = s.sat_inlet
+        # fully fill inlet throats
         # s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
         # for throat in s.inlet_throats:
         #     for cell in s.netgrid.throats_cells[throat]:
@@ -125,14 +119,16 @@ class Cfd:
 
         s.time_period = float(get('Properties_vof', 'time_period'))  # sec
         s.time_step = float(get('Properties_vof', 'time_step'))  # sec
-        s.params = {'time_period': s.time_period, 'time_step': s.time_step}
+        s.max_courant = float(get('Properties_vof', 'max_courant'))  # sec
+        s.params = {'time_period': s.time_period, 'time_step': s.time_step,
+                    'max_courant': s.max_courant}
 
         s.contact_angle = float(get('Properties_vof', 'contact_angle'))
         s.ift = float(get('Properties_vof', 'interfacial_tension'))
 
         s.props = Props(s.params)
         s.local = Local(s.props, s.netgrid)
-        s.local.calc_time_steps()
+        # s.local.calc_time_steps()
         s.convective = Convective(s.props, s.netgrid)
         s.equation = Equation(s.props, s.netgrid, s.local, s.convective)
 
@@ -152,18 +148,15 @@ class Cfd:
                             s.newman_pores_flows, s.dirichlet_pores_pressures)
         s.pnm.calc_throats_flow_rates(s.capillary_pressures)
 
-        mass_flows = s.pnm.throats_flow_rates
+        mass_flows = s.pnm.throats_mass_flows
         cross_secs = s.netgrid.throats_Ss
-        s.velocities = dict((k, float(mass_flows[k]) / cross_secs[k])
-                            for k in mass_flows)
-        # s.velocities = dict((k, float(mass_flows[k]) / cross_secs[k] / s.throats_denss[k])
-        #                     for k in mass_flows)
+        s.velocities = dict((throat, float(mass_flows[throat]) / cross_secs[throat])
+                            for throat in mass_flows)
 
     def calc_coupling_params(s):
         s.equation.calc_throats_av_sats()
         s.equation.calc_throats_sats_grads()
 
-        # print('sats:', s.equation.sats[s.equation.i_curr])
         s.av_sats = s.equation.throats_av_sats
         s.throats_denss = s.av_sats * s.paramsPnm['liq_dens'] + \
                           (1 - s.av_sats) * s.paramsPnm['b_gas_dens']
@@ -171,16 +164,14 @@ class Cfd:
                           (1 - s.av_sats) * s.paramsPnm['gas_visc']
 
         coeff = 2. * abs(math.cos(s.contact_angle)) * s.ift
-        coeff = 0 * coeff
-        # coeff = -1. * coeff
+        # coeff = -0.01 * coeff
+        coeff = -1. * coeff
         # ToDo: make more readable
-        s.capillary_pressures = dict((k, (coeff / s.throats_widths[k]) +
-                                      (coeff / s.throats_depths[k]))
-                                     for k in s.throats_widths)
 
-        s.capillary_pressures = list(s.capillary_pressures.values())
-        s.capillary_pressures = np.array(s.capillary_pressures)
-        # ###########################
+        s.capillary_pressures = np.array(list(dict((throat, (coeff / s.throats_widths[throat]) +
+                                                    (coeff / s.throats_depths[throat]))
+                                                   for throat in s.throats_widths).values()))
+
         capillary_coeffs = copy.deepcopy(s.equation.throats_sats_grads ** 3)
         # threshold = 0.1
         # capillary_coeffs = np.where(capillary_coeffs > threshold, 1, capillary_coeffs)
@@ -245,12 +236,9 @@ if __name__ == '__main__':
         S = cfd.netgrid.throats_Ss[throat]
         gas_flow_out += velocity * S
 
-    # cfd.newman_pores_flows = {6: 50., 15: 50.}
-    # cfd.dirichlet_pores_pressures = {19: cfd.paramsPnm['pressure_out'],
-    #                                  22: cfd.paramsPnm['pressure_out'],
-    #                                  23: cfd.paramsPnm['pressure_out']}
     cfd.calc_coupling_params()
     cfd.run_pnm()
+
     pressures_array = []
     av_sats_array = []
     sats_grads_array = []
@@ -290,12 +278,19 @@ if __name__ == '__main__':
     cfd.throats_values_to_cells(delta_pressures_array, delta_pressures)
 
     time = [0]
+    time_steps = []
     cour_number = np.empty([])
     time_curr = 0
+    is_last_step = False
+    while True:
+        time_step = cfd.local.calc_variable_time_step(time_curr, cfd.velocities)
+        if time_curr + time_step >= cfd.time_period:
+            time_step = cfd.time_period - time_curr
+            is_last_step = True
+        time_steps.append(time_step)
 
-    for cfd.time_step in cfd.local.time_steps:
-        time_curr += cfd.time_step
-        cfd.equation.cfd_procedure_one_step(cfd.velocities, cfd.time_step)
+        time_curr += time_step
+        cfd.equation.cfd_procedure_one_step(cfd.velocities, time_step)
 
         cfd.calc_coupling_params()
 
@@ -347,9 +342,9 @@ if __name__ == '__main__':
         delta_pressures = np.array(delta_pressures)
         cfd.throats_values_to_cells(delta_pressures_array, delta_pressures)
 
-        print('time_step: ', int(time_curr / cfd.time_step))
+        print('time_step: ', int(time_curr / time_step))
         time.append(time_curr)
-        cfd.equation.print_cour_numbers(cfd.velocities, cfd.time_step)
+        cfd.equation.print_cour_numbers(cfd.velocities, time_step)
         print(' time:', round((time_curr / cfd.time_period * 1000 * 0.1), 2), '%.', '\n')
         cfd.run_pnm()
         cfd.pores_values_to_cells(pressures_array, cfd.pnm.pressures)
@@ -362,41 +357,44 @@ if __name__ == '__main__':
         # zero_array = np.sum(cfd.equation.matrix.toarray(), axis=1) - np.array(cfd.local.alphas)
         # print('zero_array: ', zero_array)
         # print('non_zero_rows: ', np.nonzero(zero_array))
-    #
-    # fig, ax1 = plt.subplots()
-    # ax1.plot(water_av_sats_array, rel_perms_water_array, ls="", marker="o", markersize=2,
-    #          color="b", label='water')
+
+        if is_last_step:
+            break
+        #
+    fig, ax1 = plt.subplots()
+    ax1.plot(water_av_sats_array, rel_perms_water_array, ls="", marker="o", markersize=2,
+             color="b", label='water')
+    ax2 = ax1.twinx()
+    ax1.plot(water_av_sats_array, rel_perms_gas_array, ls="", marker="o", markersize=2,
+             color="y", label='gas')
+    ax2.plot(water_av_sats_array, capillary_number_array, ls="", marker="o", markersize=2,
+             label='Ca')
+    ax1.set_xlabel('Sw')
+    ax1.set_ylabel('Krw')
+    ax2.set_ylabel('Ca')
+    ax1.legend(loc=2)
+    ax2.legend(loc=1)
+    plt.show()
+
+    flow_in_accum = np.cumsum(np.array(flow_in_array) * np.array(time_steps))
+    flow_out_accum = np.cumsum(np.array(flow_out_array) * np.array(time_steps))
+    volume_inside_accum = np.array(volume_inside_array) - volume_already_in
+    time_accum = np.cumsum(time_steps)
+
+    fig, ax2 = plt.subplots()
+
+    ax2.plot(time_accum, flow_in_accum - flow_out_accum, ls="", marker="o", markersize=2,
+             color="b", label='massrate_net')
+    # ax2.plot(time_accum, flow_in_accum, ls="", marker="o", markersize=2, label='flowrate_in')
+    # ax2.plot(time_accum, flow_out_accum, ls="", marker="o", markersize=2, label='flowrate_out')
     # ax2 = ax1.twinx()
-    # ax1.plot(water_av_sats_array, rel_perms_gas_array, ls="", marker="o", markersize=2,
-    #          color="y", label='gas')
-    # ax2.plot(water_av_sats_array, capillary_number_array, ls="", marker="o", markersize=2,
-    #          label='Ca')
-    # ax1.set_xlabel('Sw')
-    # ax1.set_ylabel('Krw')
-    # ax2.set_ylabel('Ca')
-    # ax1.legend(loc=2)
-    # ax2.legend(loc=1)
-    # plt.show()
-    #
-    # flow_in_accum = np.cumsum(np.array(flow_in_array) * cfd.time_step)
-    # flow_out_accum = np.cumsum(np.array(flow_out_array) * cfd.time_step)
-    # volume_inside_accum = np.array(volume_inside_array) - volume_already_in
-    # time_accum = np.cumsum(cfd.local.time_steps)
-    #
-    # fig, ax2 = plt.subplots()
-    #
-    # ax2.plot(time_accum, flow_in_accum - flow_out_accum, ls="", marker="o", markersize=2,
-    #          color="b", label='massrate_net')
-    # # ax2.plot(time_accum, flow_in_accum, ls="", marker="o", markersize=2, label='flowrate_in')
-    # # ax2.plot(time_accum, flow_out_accum, ls="", marker="o", markersize=2, label='flowrate_out')
-    # # ax2 = ax1.twinx()
-    # ax2.set_xlabel('time')
-    # ax2.set_ylabel('volume')
-    # ax2.plot(time_accum, volume_inside_accum, ls="", marker="o", markersize=2,
-    #          color="y", label='mass_inside')
-    # plt.legend()
-    # plt.show()
-    #
+    ax2.set_xlabel('time')
+    ax2.set_ylabel('volume')
+    ax2.plot(time_accum, volume_inside_accum, ls="", marker="o", markersize=2,
+             color="y", label='mass_inside')
+    plt.legend()
+    plt.show()
+
     # #################
     # # Paraview output
     # #################
@@ -407,7 +405,7 @@ if __name__ == '__main__':
     files_names = list()
     files_descriptions = list()
 
-    freq = 1
+    freq = 1000
     for i in range(len(time)):
         if (i % freq) == 0:
             cfd.netgrid.cells_arrays = {'sat': cfd.sats_time[i],
@@ -421,9 +419,8 @@ if __name__ == '__main__':
             files_names.append(str(i) + '_refined.vtu')
             files_descriptions.append(str(i))
             cfd.netgrid.save_cells('inOut/' + files_names[-1])
-    save_files_collection_to_file(file_name, files_names, files_descriptions)
+            save_files_collection_to_file(file_name, files_names, files_descriptions)
 
     # for pores in cfd.netgrid.throats_pores.values():
     # print('press_grad:', cfd.pnm.pressures[pores[0]] - cfd.pnm.pressures[pores[1]])
     # print('pores: ', pores[0], pores[1])
-
