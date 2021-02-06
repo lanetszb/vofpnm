@@ -43,8 +43,7 @@ public:
 
     void calcTimeSteps();
 
-    double calcVariableTimeStep(const double &timeCurr,
-                                std::map<uint32_t, double> &thrsVelocities);
+    double calcFlowVariableTimeStep(std::map<uint32_t, double> &thrsVelocities);
 
     void calcAlphas(const double &timeStep);
 

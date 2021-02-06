@@ -44,10 +44,8 @@ void Local::calcTimeSteps() {
         _timeSteps.push_back(lastStep * timeStep);
 }
 
-double Local::calcVariableTimeStep(const double &timeCurr,
-                                   std::map<uint32_t, double> &thrsVelocities) {
+double Local::calcFlowVariableTimeStep(std::map<uint32_t, double> &thrsVelocities) {
 
-    auto &timePeriod = std::get<double>(_props->_params["time_period"]);
     auto &maxCourant = std::get<double>(_props->_params["max_courant"]);
 
     std::vector<double> values;
@@ -56,11 +54,6 @@ double Local::calcVariableTimeStep(const double &timeCurr,
     auto &min = *min_element(values.begin(), values.end());
 
     double timeStep = maxCourant * min;
-
-    // if (timeCurr + timeStep > timePeriod)
-    //     timeStep = timePeriod - timeCurr;
-
-    // _timeSteps.push_back(timeStep);
 
     return timeStep;
 }

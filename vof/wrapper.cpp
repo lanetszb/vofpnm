@@ -60,9 +60,8 @@ PYBIND11_MODULE(vof_bind, m) {
                  "props"_a, "netgrid"_a)
 
             .def("calc_time_steps", &Local::calcTimeSteps)
-            .def("calc_variable_time_step", &Local::calcVariableTimeStep,
-                 "time_curr",
-                 "thrs_velocities")
+            .def("calc_flow_variable_time_step", &Local::calcFlowVariableTimeStep,
+                 "thrs_velocities"_a)
             .def("calc_alphas", &Local::calcAlphas, "time_step"_a)
             .def_readwrite("time_steps", &Local::_timeSteps)
             .def_readwrite("alphas", &Local::_alphas);

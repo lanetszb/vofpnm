@@ -179,15 +179,15 @@ class Cfd:
         # capillary_coeffs = np.where(capillary_coeffs < -threshold, -1, capillary_coeffs)
         s.capillary_pressures = np.multiply(capillary_coeffs, s.capillary_pressures)
 
-    def throats_values_to_cells(s, array_arrays, array):
+    def throats_values_to_cells(s, array):
         cells_values = np.full(s.netgrid.cells_N, 0, dtype=np.float64)
         s.netgrid.throats_values_to_cells(array, cells_values)
-        array_arrays.append(copy.deepcopy(cells_values))
+        return cells_values
 
-    def pores_values_to_cells(s, array_arrays, array):
+    def pores_values_to_cells(s, array):
         cells_values = np.full(s.netgrid.cells_N, 0, dtype=np.float64)
         s.netgrid.pores_values_to_cells(array, cells_values)
-        array_arrays.append(copy.deepcopy(cells_values))
+        return cells_values
 
     def calc_rel_perms(s, rel_perms_water_array, rel_perms_gas_array, capillary_number_array,
                        water_sats_array, gas_flow_in, gas_flow_out, flow_in, flow_out):
@@ -239,15 +239,6 @@ if __name__ == '__main__':
     cfd.calc_coupling_params()
     cfd.run_pnm()
 
-    pressures_array = []
-    av_sats_array = []
-    sats_grads_array = []
-    capillary_pressures_array = []
-    velocities_array = []
-    densities_array = []
-    conductances_array = []
-    delta_pressures_array = []
-
     rel_perms_water_array = []
     rel_perms_gas_array = []
     capillary_number_array = []
@@ -259,36 +250,57 @@ if __name__ == '__main__':
     flow_out_array = []
     volume_inside_array = []
 
-    cfd.throats_values_to_cells(av_sats_array, cfd.equation.throats_av_sats)
-    cfd.throats_values_to_cells(sats_grads_array, cfd.equation.throats_sats_grads)
-    cfd.throats_values_to_cells(capillary_pressures_array, cfd.capillary_pressures)
-    cfd.pores_values_to_cells(pressures_array, cfd.pnm.pressures)
+    av_sats_array = cfd.throats_values_to_cells(cfd.equation.throats_av_sats)
+    sats_grads_array = cfd.throats_values_to_cells(cfd.equation.throats_sats_grads)
+    capillary_pressures_array = cfd.throats_values_to_cells(cfd.capillary_pressures)
+    pressures_array = cfd.pores_values_to_cells(cfd.pnm.pressures)
 
     velocities = np.array(list(cfd.velocities.values()))
-    cfd.throats_values_to_cells(velocities_array, velocities)
-    cfd.throats_values_to_cells(densities_array, cfd.throats_denss)
+    velocities_array = cfd.throats_values_to_cells(velocities)
+    densities_array = cfd.throats_values_to_cells(cfd.throats_denss)
     conductances = np.array(list(cfd.pnm.conductances.values()))
-    cfd.throats_values_to_cells(conductances_array, conductances)
+    conductances_array = cfd.throats_values_to_cells(conductances)
 
     delta_pressures = []
     for pores in cfd.netgrid.throats_pores.values():
         delta_pressures.append(cfd.pnm.pressures[pores[0]] - cfd.pnm.pressures[pores[1]])
-        # delta_pressures = np.array(delta_pressures)
     delta_pressures = np.array(delta_pressures)
-    cfd.throats_values_to_cells(delta_pressures_array, delta_pressures)
+    delta_pressures_array = cfd.throats_values_to_cells(delta_pressures)
+
+    #################
+    # Paraview output
+    #################
+    os.system('rm -r inOut/*.vtu')
+    os.system('rm -r inOut/*.pvd')
+    sats_dict = dict()
+    file_name = 'inOut/collection_refined.pvd'
+    files_names = list()
+    files_descriptions = list()
+    #################
+    #################
 
     time = [0]
     time_steps = []
     cour_number = np.empty([])
     time_curr = 0
+    time_output_freq = cfd.time_period / 100.
+    time_bound = time_output_freq
+    is_output_step = False
     is_last_step = False
+    i = int(0)
     while True:
-        time_step = cfd.local.calc_variable_time_step(time_curr, cfd.velocities)
+        time_step = cfd.local.calc_flow_variable_time_step(cfd.velocities)
+
+        if time_curr + time_step >= time_bound:
+            time_step = time_bound - time_curr
+            time_bound += time_output_freq
+            is_output_step = True
+
         if time_curr + time_step >= cfd.time_period:
             time_step = cfd.time_period - time_curr
             is_last_step = True
-        time_steps.append(time_step)
 
+        time_steps.append(time_step)
         time_curr += time_step
         cfd.equation.cfd_procedure_one_step(cfd.velocities, time_step)
 
@@ -326,37 +338,43 @@ if __name__ == '__main__':
                            water_av_sats_array, gas_flow_in, gas_flow_out, flow_in_rel_perm,
                            flow_out_rel_perm)
 
-        cfd.throats_values_to_cells(av_sats_array, cfd.equation.throats_av_sats)
-        cfd.throats_values_to_cells(sats_grads_array, cfd.equation.throats_sats_grads)
-        cfd.throats_values_to_cells(capillary_pressures_array, cfd.capillary_pressures)
+        av_sats_array = cfd.throats_values_to_cells(cfd.equation.throats_av_sats)
+        sats_grads_array = cfd.throats_values_to_cells(cfd.equation.throats_sats_grads)
+        capillary_pressures_array = cfd.throats_values_to_cells(cfd.capillary_pressures)
         velocities = np.array(list(cfd.velocities.values()))
-        cfd.throats_values_to_cells(velocities_array, velocities)
-        cfd.throats_values_to_cells(densities_array, cfd.throats_denss)
+        velocities_array = cfd.throats_values_to_cells(velocities)
+        densities_array = cfd.throats_values_to_cells(cfd.throats_denss)
         conductances = np.array(list(cfd.pnm.conductances.values()))
-        cfd.throats_values_to_cells(conductances_array, conductances)
-        cfd.sats_time.append(copy.deepcopy(cfd.equation.sats[cfd.equation.i_curr]))
+        conductances_array = cfd.throats_values_to_cells(conductances)
 
         delta_pressures = []
         for pores in cfd.netgrid.throats_pores.values():
             delta_pressures.append(cfd.pnm.pressures[pores[0]] - cfd.pnm.pressures[pores[1]])
         delta_pressures = np.array(delta_pressures)
-        cfd.throats_values_to_cells(delta_pressures_array, delta_pressures)
+        delta_pressures_array = cfd.throats_values_to_cells(delta_pressures)
 
         print('time_step: ', int(time_curr / time_step))
         time.append(time_curr)
         cfd.equation.print_cour_numbers(cfd.velocities, time_step)
-        print(' time:', round((time_curr / cfd.time_period * 1000 * 0.1), 2), '%.', '\n')
+        print(' time:', round((time_curr / cfd.time_period * 100.), 2), '%.', '\n')
         cfd.run_pnm()
-        cfd.pores_values_to_cells(pressures_array, cfd.pnm.pressures)
-
-        # np.set_printoptions(threshold=sys.maxsize)
-        # print(cfd.equation.matrix.toarray()[cfd.netgrid.throats_cells[4][-1]])
-
-        # zero matrix sum
-        # np.set_printoptions(threshold=sys.maxsize)
-        # zero_array = np.sum(cfd.equation.matrix.toarray(), axis=1) - np.array(cfd.local.alphas)
-        # print('zero_array: ', zero_array)
-        # print('non_zero_rows: ', np.nonzero(zero_array))
+        pressures_array = cfd.pores_values_to_cells(cfd.pnm.pressures)
+        sats_array = copy.deepcopy(cfd.equation.sats[cfd.equation.i_curr])
+        if is_output_step:
+            cfd.netgrid.cells_arrays = {
+                'sat': sats_array,
+                'sat_av': av_sats_array,
+                'sat_grad': sats_grads_array,
+                'capillary_Ps': capillary_pressures_array,
+                'pressures': pressures_array,
+                'velocities': velocities_array,
+                'conductances': conductances_array,
+                'delta_P': delta_pressures_array}
+            files_names.append(str(i) + '_refined.vtu')
+            files_descriptions.append(str(i))
+            cfd.netgrid.save_cells('inOut/' + files_names[-1])
+            save_files_collection_to_file(file_name, files_names, files_descriptions)
+            i += 1
 
         if is_last_step:
             break
@@ -395,32 +413,41 @@ if __name__ == '__main__':
     plt.legend()
     plt.show()
 
-    # #################
-    # # Paraview output
-    # #################
-    os.system('rm -r inOut/*.vtu')
-    os.system('rm -r inOut/*.pvd')
-    sats_dict = dict()
-    file_name = 'inOut/collection_refined.pvd'
-    files_names = list()
-    files_descriptions = list()
+    # # #################
+    # # # Paraview output
+    # # #################
+    # os.system('rm -r inOut/*.vtu')
+    # os.system('rm -r inOut/*.pvd')
+    # sats_dict = dict()
+    # file_name = 'inOut/collection_refined.pvd'
+    # files_names = list()
+    # files_descriptions = list()
+    #
+    # freq = 1000
+    # for i in range(len(time)):
+    #     if (i % freq) == 0:
+    #         cfd.netgrid.cells_arrays = {'sat': cfd.sats_time[i],
+    #                                     'sat_av': av_sats_array[i],
+    #                                     'sat_grad': sats_grads_array[i],
+    #                                     'capillary_Ps': capillary_pressures_array[i],
+    #                                     'pressures': pressures_array[i],
+    #                                     'velocities': velocities_array[i],
+    #                                     'conductances': conductances_array[i],
+    #                                     'delta_P': delta_pressures_array[i]}
+    #         files_names.append(str(i) + '_refined.vtu')
+    #         files_descriptions.append(str(i))
+    #         cfd.netgrid.save_cells('inOut/' + files_names[-1])
+    #         save_files_collection_to_file(file_name, files_names, files_descriptions)
+    #
+    # # for pores in cfd.netgrid.throats_pores.values():
+    # # print('press_grad:', cfd.pnm.pressures[pores[0]] - cfd.pnm.pressures[pores[1]])
+    # # print('pores: ', pores[0], pores[1])
 
-    freq = 1000
-    for i in range(len(time)):
-        if (i % freq) == 0:
-            cfd.netgrid.cells_arrays = {'sat': cfd.sats_time[i],
-                                        'sat_av': av_sats_array[i],
-                                        'sat_grad': sats_grads_array[i],
-                                        'capillary_Ps': capillary_pressures_array[i],
-                                        'pressures': pressures_array[i],
-                                        'velocities': velocities_array[i],
-                                        'conductances': conductances_array[i],
-                                        'delta_P': delta_pressures_array[i]}
-            files_names.append(str(i) + '_refined.vtu')
-            files_descriptions.append(str(i))
-            cfd.netgrid.save_cells('inOut/' + files_names[-1])
-            save_files_collection_to_file(file_name, files_names, files_descriptions)
+    # np.set_printoptions(threshold=sys.maxsize)
+    # print(cfd.equation.matrix.toarray()[cfd.netgrid.throats_cells[4][-1]])
 
-    # for pores in cfd.netgrid.throats_pores.values():
-    # print('press_grad:', cfd.pnm.pressures[pores[0]] - cfd.pnm.pressures[pores[1]])
-    # print('pores: ', pores[0], pores[1])
+    # zero matrix sum
+    # np.set_printoptions(threshold=sys.maxsize)
+    # zero_array = np.sum(cfd.equation.matrix.toarray(), axis=1) - np.array(cfd.local.alphas)
+    # print('zero_array: ', zero_array)
+    # print('non_zero_rows: ', np.nonzero(zero_array))
