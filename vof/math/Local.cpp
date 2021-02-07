@@ -58,6 +58,67 @@ double Local::calcFlowVariableTimeStep(std::map<uint32_t, double> &thrsVelocitie
     return timeStep;
 }
 
+double Local::calcDivVariableTimeStep(Eigen::Ref<Eigen::VectorXd> sats,
+                                      std::map<uint32_t, double> &thrsVelocities) {
+
+    auto &maxCourant = std::get<double>(_props->_params["max_courant"]);
+
+    std::vector<double> flows(0, _netgrid->_facesN);
+    for (auto &[throat, faces]: _netgrid->_throatsFaces) {
+        auto &velocity = thrsVelocities[throat];
+        uint32_t faceCurr;
+        for (auto &face : faces) {
+            faceCurr = face;
+            flows[face] = velocity * _netgrid->_throatsSs[throat];
+        }
+        flows[faceCurr] *= -1;
+    }
+
+    std::vector<double> satFlows(0, _netgrid->_facesN);
+    for (uint32_t face = 0; face < _netgrid->_facesN; face++) {
+
+        auto &cells = _netgrid->_neighborsCells[face];
+        auto &facesAss = _netgrid->_neighborsCellsFaces[face];
+        auto &normals = _netgrid->_normalsNeighborsCells[face];
+
+        std::vector<uint32_t> upwindCellsIdxs;
+        if (cells.size() == 2 and facesAss[0] == facesAss[1]) {
+            for (int i = 0; i < cells.size(); i++)
+                if (normals[i] * flows[face] > 0)
+                    upwindCellsIdxs.push_back(i);
+        } else if (cells.size() == 1 and normals[0] * flows[face] > 0)
+            upwindCellsIdxs.push_back(0);
+        else
+            for (int i = 0; i < cells.size(); i++)
+                if (flows[facesAss[i]] < 0)
+                    upwindCellsIdxs.push_back(i);
+
+
+        std::vector<double> upwindFlows(cells.size(), 0);
+        double sumUpwindFlows = 0;
+        for (auto &i : upwindCellsIdxs) {
+            upwindFlows[i] = fabs(flows[facesAss[i]]);
+            sumUpwindFlows += upwindFlows[i];
+        }
+
+        for (auto &i : upwindCellsIdxs)
+            satFlows[face] = sats[cells[i]] * upwindFlows[i] / sumUpwindFlows;
+
+    }
+
+    std::vector<double> satDivs(0, _netgrid->_cellsN);
+
+    for (uint32_t cell = 0; cell < _netgrid->_cellsN; cell++) {
+        auto &faces = _netgrid->_neighborsFaces[cell];
+        auto &normals = _netgrid->_normalsNeighborsFaces[cell];
+
+        for (int i = 0; i < 2; i++)
+            satDivs[cell] += normals[i] * satFlows[faces[i]];
+    }
+    // todo: calc time step
+    return 0;
+}
+
 void Local::calcAlphas(const double &timeStep) {
 
     for (auto &[throat, cells] : _netgrid->_throatsCells)

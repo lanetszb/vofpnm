@@ -45,6 +45,9 @@ public:
 
     double calcFlowVariableTimeStep(std::map<uint32_t, double> &thrsVelocities);
 
+    double calcDivVariableTimeStep(Eigen::Ref<Eigen::VectorXd> sats,
+                                   std::map<uint32_t, double> &thrsVelocities);
+
     void calcAlphas(const double &timeStep);
 
     std::shared_ptr<Props> _props;
