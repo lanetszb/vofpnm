@@ -118,10 +118,11 @@ class Cfd:
         s.netgrid.cells_arrays = s.sats_arrays
 
         s.time_period = float(get('Properties_vof', 'time_period'))  # sec
-        s.time_step = float(get('Properties_vof', 'time_step'))  # sec
-        s.max_courant = float(get('Properties_vof', 'max_courant'))  # sec
-        s.params = {'time_period': s.time_period, 'time_step': s.time_step,
-                    'max_courant': s.max_courant}
+        s.const_time_step = float(get('Properties_vof', 'const_time_step'))  # sec
+        s.tsm = float(get('Properties_vof', 'tsm'))
+        s.sat_trim = float(get('Properties_vof', 'sat_trim'))
+        s.params = {'time_period': s.time_period, 'const_time_step': s.const_time_step,
+                    'tsm': s.tsm, 'sat_trim': s.sat_trim}
 
         s.contact_angle = float(get('Properties_vof', 'contact_angle'))
         s.ift = float(get('Properties_vof', 'interfacial_tension'))
@@ -289,7 +290,9 @@ if __name__ == '__main__':
     is_last_step = False
     i = int(0)
     while True:
-        time_step = cfd.local.calc_flow_variable_time_step(cfd.velocities)
+        # time_step = cfd.local.calc_flow_variable_time_step(cfd.velocities)
+        time_step = cfd.local.calc_div_variable_time_step(cfd.equation.sats[cfd.equation.i_curr],
+                                                          cfd.velocities)
 
         if time_curr + time_step >= time_bound:
             time_step = time_bound - time_curr
@@ -360,11 +363,15 @@ if __name__ == '__main__':
         cfd.run_pnm()
         pressures_array = cfd.pores_values_to_cells(cfd.pnm.pressures)
         sats_array = copy.deepcopy(cfd.equation.sats[cfd.equation.i_curr])
+        output_1 = np.array(cfd.local.output_1, dtype=float)
+        output_2 = np.array(cfd.local.output_2, dtype=float)
         if is_output_step:
             cfd.netgrid.cells_arrays = {
                 'sat': sats_array,
                 'sat_av': av_sats_array,
                 'sat_grad': sats_grads_array,
+                'output_1': output_1,
+                'output_2': output_2,
                 'capillary_Ps': capillary_pressures_array,
                 'pressures': pressures_array,
                 'velocities': velocities_array,
@@ -375,6 +382,7 @@ if __name__ == '__main__':
             cfd.netgrid.save_cells('inOut/' + files_names[-1])
             save_files_collection_to_file(file_name, files_names, files_descriptions)
             i += 1
+            is_output_step = False
 
         if is_last_step:
             break

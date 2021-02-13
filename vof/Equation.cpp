@@ -73,7 +73,7 @@ void Equation::processNonBoundFaces(const std::set<uint32_t> &faces) {
             for (int i = 0; i < cells.size(); i++)
                 if (normals[i] * _convective->_betas[face] > 0)
                     upwindCellsIdxs.push_back(i);
-        } else if (cells.size() == 1 and normals[0] * _convective->_betas[face] > 0)
+        } else if (cells.size() == 1 /*and normals[0] * _convective->_betas[face] > 0*/)
             upwindCellsIdxs.push_back(0);
         else
             for (int i = 0; i < cells.size(); i++)

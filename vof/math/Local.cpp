@@ -28,7 +28,9 @@
 Local::Local(std::shared_ptr<Props> props, std::shared_ptr<Netgrid> netgrid) :
         _props(props),
         _netgrid(netgrid),
-        _alphas(_netgrid->_cellsN, 0) {}
+        _alphas(_netgrid->_cellsN, 0),
+        _output1(_netgrid->_cellsN, 0),
+        _output2(_netgrid->_cellsN, 0) {}
 
 void Local::calcTimeSteps() {
 
@@ -46,14 +48,14 @@ void Local::calcTimeSteps() {
 
 double Local::calcFlowVariableTimeStep(std::map<uint32_t, double> &thrsVelocities) {
 
-    auto &maxCourant = std::get<double>(_props->_params["max_courant"]);
+    auto &tsm = std::get<double>(_props->_params["tsm"]);
 
     std::vector<double> values;
     for (auto &[throat, velocity]: thrsVelocities)
         values.push_back(_netgrid->_throatsDLs[throat] / fabs(velocity));
     auto &min = *min_element(values.begin(), values.end());
 
-    double timeStep = maxCourant * min;
+    double timeStep = tsm * min;
 
     return timeStep;
 }
@@ -61,9 +63,11 @@ double Local::calcFlowVariableTimeStep(std::map<uint32_t, double> &thrsVelocitie
 double Local::calcDivVariableTimeStep(Eigen::Ref<Eigen::VectorXd> sats,
                                       std::map<uint32_t, double> &thrsVelocities) {
 
-    auto &maxCourant = std::get<double>(_props->_params["max_courant"]);
+    auto &satTrim = std::get<double>(_props->_params["sat_trim"]);
+    auto &tsm = std::get<double>(_props->_params["tsm"]);
+    auto &constTimeStep = std::get<double>(_props->_params["const_time_step"]);
 
-    std::vector<double> flows(0, _netgrid->_facesN);
+    std::vector<double> flows(_netgrid->_facesN, 0);
     for (auto &[throat, faces]: _netgrid->_throatsFaces) {
         auto &velocity = thrsVelocities[throat];
         uint32_t faceCurr;
@@ -74,7 +78,7 @@ double Local::calcDivVariableTimeStep(Eigen::Ref<Eigen::VectorXd> sats,
         flows[faceCurr] *= -1;
     }
 
-    std::vector<double> satFlows(0, _netgrid->_facesN);
+    std::vector<double> satFlows(_netgrid->_facesN, 0);
     for (uint32_t face = 0; face < _netgrid->_facesN; face++) {
 
         auto &cells = _netgrid->_neighborsCells[face];
@@ -86,7 +90,7 @@ double Local::calcDivVariableTimeStep(Eigen::Ref<Eigen::VectorXd> sats,
             for (int i = 0; i < cells.size(); i++)
                 if (normals[i] * flows[face] > 0)
                     upwindCellsIdxs.push_back(i);
-        } else if (cells.size() == 1 and normals[0] * flows[face] > 0)
+        } else if (cells.size() == 1 /*and normals[0] * flows[face] > 0*/)
             upwindCellsIdxs.push_back(0);
         else
             for (int i = 0; i < cells.size(); i++)
@@ -106,17 +110,46 @@ double Local::calcDivVariableTimeStep(Eigen::Ref<Eigen::VectorXd> sats,
 
     }
 
-    std::vector<double> satDivs(0, _netgrid->_cellsN);
-
+    std::vector<double> satDivs(_netgrid->_cellsN, 0);
+    for (auto &&value: satDivs)
+        value = 0;
     for (uint32_t cell = 0; cell < _netgrid->_cellsN; cell++) {
         auto &faces = _netgrid->_neighborsFaces[cell];
         auto &normals = _netgrid->_normalsNeighborsFaces[cell];
 
-        for (int i = 0; i < 2; i++)
+        for (uint32_t i = 0; i < 2; i++)
             satDivs[cell] += normals[i] * satFlows[faces[i]];
     }
-    // todo: calc time step
-    return 0;
+
+    std::vector<double> deltaSats(_netgrid->_cellsN, 0);
+    std::vector<double> maxTimeSteps(_netgrid->_cellsN, 0);
+    for (auto &[throat, cells] : _netgrid->_throatsCells)
+        for (auto &&cell: cells) {
+            if (satDivs[cell] > 0) {
+                maxTimeSteps[cell] = sats[cell] * _netgrid->_throatsDVs[throat] / satDivs[cell];
+                deltaSats[cell] = sats[cell];
+            } else if (satDivs[cell] < 0) {
+                maxTimeSteps[cell] =
+                        (sats[cell] - 1.) * _netgrid->_throatsDVs[throat] / satDivs[cell];
+                deltaSats[cell] = 1. - sats[cell];
+            }
+        }
+
+    _output1 = deltaSats;
+    _output2 = maxTimeSteps;
+
+    std::vector<double> trimmedMaxTimeSteps;
+    for (uint32_t cell = 0; cell < _netgrid->_cellsN; cell++)
+        if (deltaSats[cell] > satTrim)
+            trimmedMaxTimeSteps.push_back(maxTimeSteps[cell]);
+
+    double timeStep = constTimeStep;
+    if (not trimmedMaxTimeSteps.empty()) {
+        auto &minMaxTimeStep = *min_element(trimmedMaxTimeSteps.begin(), trimmedMaxTimeSteps.end());
+        timeStep = tsm * minMaxTimeStep;
+    }
+
+    return timeStep;
 }
 
 void Local::calcAlphas(const double &timeStep) {

@@ -56,6 +56,9 @@ public:
     std::vector<double> _alphas;
     std::vector<double> _timeSteps;
 
+    std::vector<double> _output1;
+    std::vector<double> _output2;
+
 };
 
 #endif // LOCAL_H

@@ -62,10 +62,13 @@ PYBIND11_MODULE(vof_bind, m) {
             .def("calc_time_steps", &Local::calcTimeSteps)
             .def("calc_flow_variable_time_step", &Local::calcFlowVariableTimeStep,
                  "thrs_velocities"_a)
+            .def("calc_div_variable_time_step", &Local::calcDivVariableTimeStep,
+                 "sats"_a, "thrs_velocities"_a)
             .def("calc_alphas", &Local::calcAlphas, "time_step"_a)
+            .def_readwrite("alphas", &Local::_alphas)
             .def_readwrite("time_steps", &Local::_timeSteps)
-            .def_readwrite("alphas", &Local::_alphas);
-
+            .def_readwrite("output_1", &Local::_output1)
+            .def_readwrite("output_2", &Local::_output2);
 
     py::class_<Convective, std::shared_ptr<Convective>>(m, "Convective")
             .def(py::init<std::shared_ptr<Props>, std::shared_ptr<Netgrid>>(),
