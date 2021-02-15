@@ -65,11 +65,13 @@ void Pnm::processThroats() {
     }
 }
 
-void Pnm::processNonboundPores() {
+void Pnm::processPores() {
 
     for (auto &pore: _netgrid->_inletPores)
         _freeCoeffs[pore] = 0;
     for (auto &pore: _netgrid->_outletPores)
+        _freeCoeffs[pore] = 0;
+    for (auto &pore: _netgrid->_deadendPores)
         _freeCoeffs[pore] = 0;
     for (auto &pore: _netgrid->_nonboundPores)
         _freeCoeffs[pore] = 0;
@@ -94,7 +96,11 @@ void Pnm::fillMatrix(std::map<uint32_t, double> &poresFlows,
         for (MatrixIterator it(_matrix, i); it; ++it)
             it.valueRef() = 0;
 
-    for (auto &pore: _netgrid->_nonboundPores) {
+    std::set<uint32_t> groupedPores;
+    groupedPores.insert(_netgrid->_nonboundPores.begin(), _netgrid->_nonboundPores.end());
+    groupedPores.insert(_netgrid->_deadendPores.begin(), _netgrid->_deadendPores.end());
+
+    for (auto &pore: groupedPores) {
         _freeVector[pore] = _freeCoeffs[pore];
         auto &throats = _netgrid->_poresThroats[pore];
         auto &normals = _netgrid->_normalsPoresThroats[pore];
@@ -164,7 +170,7 @@ void Pnm::cfdProcedure(const std::vector<double> &densities,
 
     calcConductances(densities, viscosities);
     processThroats();
-    processNonboundPores();
+    processPores();
     processNewmanPores(poresFlows);
     processDirichPores(poresPressures);
     fillMatrix(poresFlows, poresPressures, capillaryPressures);
@@ -187,7 +193,11 @@ void Pnm::calcThroatsMassFlows(const std::vector<double> &capillaryPressures) {
 
 void Pnm::calcPoresFlowRates() {
 
-    for (auto &pore: _netgrid->_nonboundPores) {
+    std::set<uint32_t> groupedPores;
+    groupedPores.insert(_netgrid->_nonboundPores.begin(), _netgrid->_nonboundPores.end());
+    groupedPores.insert(_netgrid->_deadendPores.begin(), _netgrid->_deadendPores.end());
+
+    for (auto &pore: groupedPores) {
         auto &poresThroats = _netgrid->_poresThroats[pore];
         auto &normals = _netgrid->_normalsPoresThroats[pore];
         for (uint32_t i = 0; i < poresThroats.size(); i++)

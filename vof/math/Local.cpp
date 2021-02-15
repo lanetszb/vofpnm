@@ -85,18 +85,18 @@ double Local::calcDivVariableTimeStep(Eigen::Ref<Eigen::VectorXd> sats,
         auto &facesAss = _netgrid->_neighborsCellsFaces[face];
         auto &normals = _netgrid->_normalsNeighborsCells[face];
 
+        // be very fucking careful
         std::vector<uint32_t> upwindCellsIdxs;
         if (cells.size() == 2 and facesAss[0] == facesAss[1]) {
             for (int i = 0; i < cells.size(); i++)
                 if (normals[i] * flows[face] > 0)
                     upwindCellsIdxs.push_back(i);
-        } else if (cells.size() == 1 /*and normals[0] * flows[face] > 0*/)
+        } else if (cells.size() == 1 and normals[0] * flows[face] > 0)
             upwindCellsIdxs.push_back(0);
         else
             for (int i = 0; i < cells.size(); i++)
                 if (flows[facesAss[i]] < 0)
                     upwindCellsIdxs.push_back(i);
-
 
         std::vector<double> upwindFlows(cells.size(), 0);
         double sumUpwindFlows = 0;
@@ -106,7 +106,7 @@ double Local::calcDivVariableTimeStep(Eigen::Ref<Eigen::VectorXd> sats,
         }
 
         for (auto &i : upwindCellsIdxs)
-            satFlows[face] = sats[cells[i]] * upwindFlows[i] / sumUpwindFlows;
+            satFlows[face] = sats[cells[i]] * flows[face] * upwindFlows[i] / sumUpwindFlows;
 
     }
 
@@ -136,7 +136,7 @@ double Local::calcDivVariableTimeStep(Eigen::Ref<Eigen::VectorXd> sats,
         }
 
     _output1 = deltaSats;
-    _output2 = maxTimeSteps;
+    _output2 = satDivs;
 
     std::vector<double> trimmedMaxTimeSteps;
     for (uint32_t cell = 0; cell < _netgrid->_cellsN; cell++)

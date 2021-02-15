@@ -32,7 +32,7 @@ public:
 
     void processThroats();
 
-    void processNonboundPores();
+    void processPores();
 
     void processNewmanPores(std::map<uint32_t, double> &poresFlows);
 

@@ -27,6 +27,7 @@ import numpy as np
 import math
 import copy
 import configparser
+import json
 from ast import literal_eval
 import matplotlib.pyplot as plt
 
@@ -56,11 +57,28 @@ class Cfd:
         s.outlet_pores = literal_eval(s.__config['Properties_grid']['outlet_pores'])
         s.inlet_throats = literal_eval(s.__config['Properties_grid']['inlet_throats'])
         s.outlet_throats = literal_eval(s.__config['Properties_grid']['outlet_throats'])
-        s.delta_L = float(get('Properties_grid', 'delta_L'))
+        s.delta_V = float(get('Properties_grid', 'delta_V'))
         s.min_cells_N = np.uint16(get('Properties_grid', 'min_cells_N'))
 
+        # json_file_name = str(get('Properties_grid', 'case_name'))
+        # with open('inOut/' + json_file_name) as f:
+        #     data = json.load(f)
+        #
+        # s.pores_coordinates = {int(key): value for key, value in data['pores_coordinates'].items()}
+        # s.throats_pores = {int(key): value for key, value in data['throats_pores'].items()}
+        # s.throats_widths = {int(key): value for key, value in data['throats_widths'].items()}
+        # s.throats_depths = {int(key): value for key, value in data['throats_depths'].items()}
+        #
+        # s.inlet_pores = set(data['boundary_pores']['inlet_pores'])
+        # s.outlet_pores = set(data['boundary_pores']['outlet_pores'])
+        # s.inlet_throats = set(data['boundary_throats']['inlet_throats'])
+        # s.outlet_throats = set(data['boundary_throats']['outlet_throats'])
+        #
+        # s.delta_V = float(get('Properties_grid', 'delta_V'))
+        # s.min_cells_N = np.uint16(get('Properties_grid', 'min_cells_N'))
+
         s.netgrid = Netgrid(s.pores_coordinates, s.throats_pores,
-                            s.throats_widths, s.throats_depths, s.delta_L, s.min_cells_N,
+                            s.throats_widths, s.throats_depths, s.delta_V, s.min_cells_N,
                             s.inlet_pores, s.outlet_pores)
         #############
         # PNM
@@ -166,7 +184,8 @@ class Cfd:
 
         coeff = 2. * abs(math.cos(s.contact_angle)) * s.ift
         # coeff = -0.01 * coeff
-        coeff = -1. * coeff
+        # coeff = -1. * coeff
+        coeff = 0
         # ToDo: make more readable
 
         s.capillary_pressures = np.array(list(dict((throat, (coeff / s.throats_widths[throat]) +
@@ -256,6 +275,8 @@ if __name__ == '__main__':
     capillary_pressures_array = cfd.throats_values_to_cells(cfd.capillary_pressures)
     pressures_array = cfd.pores_values_to_cells(cfd.pnm.pressures)
 
+    throats_idxs = np.arange(cfd.netgrid.throats_N, dtype=float)
+    throats_idxs_array = cfd.throats_values_to_cells(throats_idxs)
     velocities = np.array(list(cfd.velocities.values()))
     velocities_array = cfd.throats_values_to_cells(velocities)
     densities_array = cfd.throats_values_to_cells(cfd.throats_denss)
@@ -290,9 +311,12 @@ if __name__ == '__main__':
     is_last_step = False
     i = int(0)
     while True:
-        # time_step = cfd.local.calc_flow_variable_time_step(cfd.velocities)
+        time_step = cfd.local.calc_flow_variable_time_step(cfd.velocities)
+
         time_step = cfd.local.calc_div_variable_time_step(cfd.equation.sats[cfd.equation.i_curr],
                                                           cfd.velocities)
+        time_step = 0.05
+        print('time_step: ', time_step)
 
         if time_curr + time_step >= time_bound:
             time_step = time_bound - time_curr
@@ -305,8 +329,8 @@ if __name__ == '__main__':
 
         time_steps.append(time_step)
         time_curr += time_step
-        cfd.equation.cfd_procedure_one_step(cfd.velocities, time_step)
 
+        cfd.equation.cfd_procedure_one_step(cfd.velocities, time_step)
         cfd.calc_coupling_params()
 
         volume_inside = copy.deepcopy(np.sum(cfd.throats_volumes * cfd.equation.throats_av_sats *
@@ -376,7 +400,8 @@ if __name__ == '__main__':
                 'pressures': pressures_array,
                 'velocities': velocities_array,
                 'conductances': conductances_array,
-                'delta_P': delta_pressures_array}
+                'delta_P': delta_pressures_array,
+                'throats_idxs': throats_idxs_array}
             files_names.append(str(i) + '_refined.vtu')
             files_descriptions.append(str(i))
             cfd.netgrid.save_cells('inOut/' + files_names[-1])

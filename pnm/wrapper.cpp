@@ -19,7 +19,7 @@ PYBIND11_MODULE(pnm_bind, m) {
             .def("calc_conductances", &Pnm::calcConductances,
                  "densities"_a,
                  "viscosities"_a)
-            .def("process_nonbound_pores", &Pnm::processNonboundPores)
+            .def("process_pores", &Pnm::processPores)
             .def("process_newman_pores", &Pnm::processNewmanPores,
                  "pores_flows"_a)
             .def("process_dirich_pores", &Pnm::processDirichPores,
