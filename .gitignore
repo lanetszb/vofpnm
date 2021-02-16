@@ -47,3 +47,5 @@ __pycache__
 *.pvd
 *.npy
 *.json
+
+cmake-build-release

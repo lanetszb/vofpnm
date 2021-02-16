@@ -245,7 +245,6 @@ void Equation::cfdProcedureOneStep(std::map<uint32_t, double> &thrsVelocities,
 
     fillMatrix();
     processDirichCells(_boundGroupsDirich, _satsBoundDirich);
-    matrix.coeffRef(dim-1, dim-1) = _local->_alphas[dim-1];
     calcSatsImplicit();
 
 }
