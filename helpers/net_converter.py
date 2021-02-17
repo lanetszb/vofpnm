@@ -23,34 +23,27 @@
 
 import sys
 import os
-import numpy as np
-import math
-import copy
-import configparser
 import json
-import matplotlib.pyplot as plt
 
 current_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(current_path, '../'))
+sys.path.append(os.path.join(current_path, '../../'))
 
-pores_coordinates = {0: [0., 0.], 1: [0., 4.], 2: [2., 4.], 3: [-2., 4.],
-                     4: [0., 8.], 5: [2., 8.], 6: [-2., 8.]}
-throats_pores = {0: [0, 1], 1: [1, 2], 2: [1, 3], 3: [1, 4], 4: [2, 5], 5: [3, 6]}
-throats_widths = {0: 0.13, 1: 0.08, 2: 0.4, 3: 0.13, 4: 0.08, 5: 0.4}
-throats_depths = {0: 0.1, 1: 0.1, 2: 0.1, 3: 0.1, 4: 0.1, 5: 0.1}
+pores_coordinates = {0: [1., 2.], 1: [1., -2.], 2: [5., 0.], 3: [7., 0.],
+                     4: [9., 2.], 5: [9., -2.]}
+throats_pores = {0: [0, 2], 1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [3, 5]}
+throats_widths = {0: 0.1, 1: 0.2, 2: 0.25, 3: 0.15, 4: 0.15}
+throats_depths = {0: 0.15, 1: 0.35, 2: 0.6, 3: 0.25, 4: 0.25}
 
-delta_V = 13.
-min_cells_N = 5
+boundary_pores = {'inlet_pores': [0, 1], 'outlet_pores': [4, 5]}
+boundary_throats = {'inlet_throats': [0, 1], 'outlet_throats': [3, 4]}
 
-boundary_pores = {'inlet_pores': [0], 'outlet_pores': [4, 5]}
-boundary_throats = {'inlet_throats': [0], 'outlet_throats': [3, 4]}
-
-json_file_name = 'inOut/model_fork.txt'
+# be cautious, do not rewrite existing models
+json_file_name = 'inOut/model_test.txt'
 with open(json_file_name, 'w') as f:
     json.dump({'pores_coordinates': pores_coordinates, 'throats_pores': throats_pores,
                'throats_widths': throats_widths, 'throats_depths': throats_depths,
                'boundary_pores': boundary_pores, 'boundary_throats': boundary_throats},
-              f, sort_keys=True, indent=4 * ' ')
+              f, sort_keys=True, indent=4 * ' ', ensure_ascii=False)
 
 with open(json_file_name) as f:
     data = json.load(f)
@@ -64,4 +57,3 @@ inlet_pores = set(data['boundary_pores']['inlet_pores'])
 outlet_pores = set(data['boundary_pores']['outlet_pores'])
 inlet_throats = set(data['boundary_throats']['inlet_throats'])
 outlet_throats = set(data['boundary_throats']['outlet_throats'])
-

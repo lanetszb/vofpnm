@@ -49,33 +49,22 @@ class Cfd:
         # creating grid with Netgrid
         #################################
 
-        s.pores_coordinates = literal_eval(s.__config['Properties_grid']['pores_coordinates'])
-        s.throats_pores = literal_eval(s.__config['Properties_grid']['throats_pores'])
-        s.throats_widths = literal_eval(s.__config['Properties_grid']['throats_widths'])
-        s.throats_depths = literal_eval(s.__config['Properties_grid']['throats_depths'])
-        s.inlet_pores = literal_eval(s.__config['Properties_grid']['inlet_pores'])
-        s.outlet_pores = literal_eval(s.__config['Properties_grid']['outlet_pores'])
-        s.inlet_throats = literal_eval(s.__config['Properties_grid']['inlet_throats'])
-        s.outlet_throats = literal_eval(s.__config['Properties_grid']['outlet_throats'])
+        json_file_name = str(get('Properties_grid', 'case_name'))
+        with open('inOut/' + json_file_name) as f:
+            data = json.load(f)
+
+        s.pores_coordinates = {int(key): value for key, value in data['pores_coordinates'].items()}
+        s.throats_pores = {int(key): value for key, value in data['throats_pores'].items()}
+        s.throats_widths = {int(key): value for key, value in data['throats_widths'].items()}
+        s.throats_depths = {int(key): value for key, value in data['throats_depths'].items()}
+
+        s.inlet_pores = set(data['boundary_pores']['inlet_pores'])
+        s.outlet_pores = set(data['boundary_pores']['outlet_pores'])
+        s.inlet_throats = set(data['boundary_throats']['inlet_throats'])
+        s.outlet_throats = set(data['boundary_throats']['outlet_throats'])
+
         s.delta_V = float(get('Properties_grid', 'delta_V'))
         s.min_cells_N = np.uint16(get('Properties_grid', 'min_cells_N'))
-
-        # json_file_name = str(get('Properties_grid', 'case_name'))
-        # with open('inOut/' + json_file_name) as f:
-        #     data = json.load(f)
-        #
-        # s.pores_coordinates = {int(key): value for key, value in data['pores_coordinates'].items()}
-        # s.throats_pores = {int(key): value for key, value in data['throats_pores'].items()}
-        # s.throats_widths = {int(key): value for key, value in data['throats_widths'].items()}
-        # s.throats_depths = {int(key): value for key, value in data['throats_depths'].items()}
-        #
-        # s.inlet_pores = set(data['boundary_pores']['inlet_pores'])
-        # s.outlet_pores = set(data['boundary_pores']['outlet_pores'])
-        # s.inlet_throats = set(data['boundary_throats']['inlet_throats'])
-        # s.outlet_throats = set(data['boundary_throats']['outlet_throats'])
-        #
-        # s.delta_V = float(get('Properties_grid', 'delta_V'))
-        # s.min_cells_N = np.uint16(get('Properties_grid', 'min_cells_N'))
 
         s.netgrid = Netgrid(s.pores_coordinates, s.throats_pores,
                             s.throats_widths, s.throats_depths, s.delta_V, s.min_cells_N,
@@ -300,7 +289,6 @@ if __name__ == '__main__':
     files_descriptions = list()
     #################
     #################
-
     time = [0]
     time_steps = []
     cour_number = np.empty([])

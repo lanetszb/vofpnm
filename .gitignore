@@ -49,3 +49,4 @@ __pycache__
 *.json
 
 cmake-build-release
+inOut/*.txt
