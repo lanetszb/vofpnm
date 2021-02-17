@@ -137,6 +137,7 @@ class Cfd:
 
         s.time_period = float(get('Properties_vof', 'time_period'))  # sec
         s.const_time_step = float(get('Properties_vof', 'const_time_step'))  # sec
+        s.time_step_type = str(get('Properties_vof', 'time_step_type'))  # sec
         s.tsm = float(get('Properties_vof', 'tsm'))
         s.sat_trim = float(get('Properties_vof', 'sat_trim'))
         s.params = {'time_period': s.time_period, 'const_time_step': s.const_time_step,
@@ -147,7 +148,6 @@ class Cfd:
 
         s.props = Props(s.params)
         s.local = Local(s.props, s.netgrid)
-        # s.local.calc_time_steps()
         s.convective = Convective(s.props, s.netgrid)
         s.equation = Equation(s.props, s.netgrid, s.local, s.convective)
 
@@ -221,11 +221,11 @@ class Cfd:
         capillary_number_array.append(capillary_number)
 
         relat_flow_rate = (flow_in + flow_out) / (gas_flow_in + gas_flow_out)
-        # print('flow_in + flow_out', flow_in + flow_out)
-        # print('gas_flow_in + gas_flow_out', gas_flow_in + gas_flow_out)
+        # 5.668081102853038e-09
 
         rel_perm_water = water_av_sat * s.paramsPnm['liq_visc'] * relat_flow_rate / s.paramsPnm[
             'gas_visc']
+
         rel_perm_gas = (1. - water_av_sat) * relat_flow_rate
 
         # rel_perm_water = water_av_sat * visc_av * relat_velocity / \
@@ -311,12 +311,14 @@ if __name__ == '__main__':
     is_last_step = False
     i = int(0)
     while True:
-        time_step = cfd.local.calc_flow_variable_time_step(cfd.velocities)
 
-        time_step = cfd.local.calc_div_variable_time_step(cfd.equation.sats[cfd.equation.i_curr],
-                                                          cfd.velocities)
-        time_step = 0.05
-        print('time_step: ', time_step)
+        if cfd.time_step_type == 'const':
+            time_step = cfd.const_time_step
+        elif cfd.time_step_type == 'flow_variable':
+            time_step = cfd.local.calc_flow_variable_time_step(cfd.velocities)
+        elif cfd.time_step_type == 'div_variable':
+            time_step = cfd.local.calc_div_variable_time_step(
+                cfd.equation.sats[cfd.equation.i_curr], cfd.velocities)
 
         if time_curr + time_step >= time_bound:
             time_step = time_bound - time_curr
@@ -346,7 +348,7 @@ if __name__ == '__main__':
             density = cfd.paramsPnm['liq_dens']
             sat = cfd.equation.sats[cfd.equation.i_curr][first_cell]
             flow_in += velocity * S * sat * density
-            flow_in_rel_perm += velocity * S
+            flow_in_rel_perm += velocity * S * sat
         flow_in_array.append(flow_in)
 
         flow_out = 0
@@ -358,7 +360,7 @@ if __name__ == '__main__':
             density = cfd.paramsPnm['liq_dens']
             sat = cfd.equation.sats[cfd.equation.i_curr][last_cell]
             flow_out += velocity * S * sat * density
-            flow_out_rel_perm += velocity * S
+            flow_out_rel_perm += velocity * S * sat
         flow_out_array.append(flow_out)
 
         cfd.calc_rel_perms(rel_perms_water_array, rel_perms_gas_array, capillary_number_array,
