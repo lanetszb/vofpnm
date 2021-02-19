@@ -28,17 +28,18 @@ import json
 current_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_path, '../../'))
 
-pores_coordinates = {0: [1., 2.], 1: [1., -2.], 2: [5., 0.], 3: [7., 0.],
-                     4: [9., 2.], 5: [9., -2.]}
-throats_pores = {0: [0, 2], 1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [3, 5]}
-throats_widths = {0: 0.1, 1: 0.2, 2: 0.25, 3: 0.15, 4: 0.15}
-throats_depths = {0: 0.15, 1: 0.35, 2: 0.6, 3: 0.25, 4: 0.25}
+pores_coordinates = {0: [0.1, 0.2], 1: [1.2, 0.3], 2: [2.3, 0.4], 3: [3.4, 0.1], 4: [4.1, 0.3], 5: [5.5, 0.4],
+                     6: [2.1, 2.1], 7: [0.3, 2.2], 8: [1.4, 2.4], 9: [3.2, 2.1], 10: [4.4, 2.3]}
+throats_pores = {0: [0, 1], 1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 5], 5: [2, 6],
+                 6: [7, 8], 7: [8, 6], 8: [6, 9], 9: [9, 10]}
+throats_widths = {0: 0.15, 1: 0.2, 2: 0.3, 3: 0.12, 4: 0.13, 5: 0.18, 6: 0.11, 7: 0.21, 8: 0.19, 9: 0.23}
+throats_depths = {0: 0.1, 1: 0.1, 2: 0.1, 3: 0.1, 4: 0.1, 5: 0.1, 6: 0.1, 7: 0.1, 8: 0.1, 9: 0.1}
 
-boundary_pores = {'inlet_pores': [0, 1], 'outlet_pores': [4, 5]}
-boundary_throats = {'inlet_throats': [0, 1], 'outlet_throats': [3, 4]}
+boundary_pores = {'inlet_pores': [0, 7], 'outlet_pores': [5, 10]}
+boundary_throats = {'inlet_throats': [0, 6], 'outlet_throats': [4, 9]}
 
 # be cautious, do not rewrite existing models
-json_file_name = 'inOut/model_test.txt'
+json_file_name = 'inOut/model_linear.txt'
 with open(json_file_name, 'w') as f:
     json.dump({'pores_coordinates': pores_coordinates, 'throats_pores': throats_pores,
                'throats_widths': throats_widths, 'throats_depths': throats_depths,

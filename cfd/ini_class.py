@@ -1,0 +1,152 @@
+# MIT License
+#
+# Copyright (c) 2020 Aleksandr Zhuravlyov and Zakhar Lanets
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
+import sys
+import os
+import numpy as np
+import math
+import copy
+import configparser
+import json
+from ast import literal_eval
+import matplotlib.pyplot as plt
+
+current_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(current_path, '../../'))
+
+from netgrid import Netgrid, save_files_collection_to_file
+from vofpnm import Pnm
+from vofpnm import Props, Boundary, Local, Convective, Equation
+
+
+class Ini:
+    def __init__(s, config_file):
+        s.__config = configparser.ConfigParser()
+        s.__config.read(config_file)
+        get = s.__config.get
+
+        ################################
+        # creating grid with Netgrid
+        #################################
+
+        json_file_name = str(get('Properties_grid', 'case_name'))
+        with open('inOut/' + json_file_name) as f:
+            data = json.load(f)
+
+        s.pores_coordinates = {int(key): value for key, value in data['pores_coordinates'].items()}
+        s.throats_pores = {int(key): value for key, value in data['throats_pores'].items()}
+        s.throats_widths = {int(key): value for key, value in data['throats_widths'].items()}
+        s.throats_depths = {int(key): value for key, value in data['throats_depths'].items()}
+
+        s.inlet_pores = set(data['boundary_pores']['inlet_pores'])
+        s.outlet_pores = set(data['boundary_pores']['outlet_pores'])
+        s.inlet_throats = set(data['boundary_throats']['inlet_throats'])
+        s.outlet_throats = set(data['boundary_throats']['outlet_throats'])
+
+        s.delta_V = float(get('Properties_grid', 'delta_V'))
+        s.min_cells_N = np.uint16(get('Properties_grid', 'min_cells_N'))
+
+        s.netgrid = Netgrid(s.pores_coordinates, s.throats_pores,
+                            s.throats_widths, s.throats_depths, s.delta_V, s.min_cells_N,
+                            s.inlet_pores, s.outlet_pores)
+        #############
+        # PNM
+        #############
+
+        s.paramsPnm = {'a_gas_dens': float(get('Properties_gas', 'a_gas_dens')),
+                       'b_gas_dens': float(get('Properties_gas', 'b_gas_dens')),
+                       'gas_visc': float(get('Properties_gas', 'gas_visc')),
+                       'liq_dens': float(get('Properties_liquid', 'liq_dens')),
+                       'liq_visc': float(get('Properties_liquid', 'liq_visc')),
+                       'pressure_in': float(get('Properties_simulation', 'pressure_in')),
+                       'pressure_out': float(get('Properties_simulation', 'pressure_out')),
+                       'it_accuracy': float(get('Properties_simulation', 'it_accuracy')),
+                       'solver_method': str(get('Properties_simulation', 'solver_method'))}
+
+        s.pore_n = s.netgrid.pores_N
+        s.throats_denss = np.tile(s.paramsPnm['b_gas_dens'], s.netgrid.throats_N)
+        s.throats_viscs = np.tile(s.paramsPnm['gas_visc'], s.netgrid.throats_N)
+        s.throats_capillary_pressures = np.tile(0., s.netgrid.throats_N)
+
+        s.newman_pores_flows = {}
+        s.dirichlet_pores_pressures = {}
+        for pore in s.inlet_pores:
+            s.dirichlet_pores_pressures[pore] = s.paramsPnm['pressure_in']
+        for pore in s.outlet_pores:
+            s.dirichlet_pores_pressures[pore] = s.paramsPnm['pressure_out']
+
+        s.throats_volumes = np.array(list(dict(
+            (throat, float(s.netgrid.throats_Ss[throat] * s.netgrid.throats_Ls[throat]))
+            for throat in s.netgrid.throats_Ss).values()))
+
+        s.pnm = Pnm(s.paramsPnm, s.netgrid)
+        s.throats_velocities = None
+
+        #############
+        # VOF
+        #############
+        s.sat_ini = float(get('Properties_vof', 'sat_ini'))
+        s.sat_inlet = float(get('Properties_vof', 'sat_inlet'))
+        s.sat_outlet = float(get('Properties_vof', 'sat_outlet'))
+
+        # fill the first cell in the inlet throats
+        s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
+        for i in s.netgrid.types_cells['inlet']:
+            s.sats_curr[i] = s.sat_inlet
+        # fully fill inlet throats
+        # s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
+        # for throat in s.inlet_throats:
+        #     for cell in s.netgrid.throats_cells[throat]:
+        #         s.sats_curr[cell] = s.sat_inlet
+
+        s.sats_prev = copy.deepcopy(s.sats_curr)
+        s.sats_arrays = {"sats_curr": s.sats_curr,
+                         "sats_prev": s.sats_prev}
+        s.netgrid.cells_arrays = s.sats_arrays
+
+        s.time_period = float(get('Properties_vof', 'time_period'))  # sec
+        s.const_time_step = float(get('Properties_vof', 'const_time_step'))  # sec
+        s.time_step_type = str(get('Properties_vof', 'time_step_type'))  # sec
+        s.tsm = float(get('Properties_vof', 'tsm'))
+        s.sat_trim = float(get('Properties_vof', 'sat_trim'))
+        s.params = {'time_period': s.time_period, 'const_time_step': s.const_time_step,
+                    'tsm': s.tsm, 'sat_trim': s.sat_trim}
+
+        s.contact_angle = float(get('Properties_vof', 'contact_angle'))
+        s.ift = float(get('Properties_vof', 'interfacial_tension'))
+
+        s.props = Props(s.params)
+        s.local = Local(s.props, s.netgrid)
+        s.convective = Convective(s.props, s.netgrid)
+        s.equation = Equation(s.props, s.netgrid, s.local, s.convective)
+
+        s.equation.bound_groups_dirich = ['inlet']
+        s.equation.sats_bound_dirich = {'inlet': s.sat_inlet}
+        s.equation.bound_groups_newman = ['outlet']
+        s.equation.sats = [s.sats_curr, s.sats_prev]
+        s.sats_init = copy.deepcopy(s.equation.sats[s.equation.i_curr])
+        s.sats_time = [s.sats_init]
+
+        s.av_density = None
+        s.av_viscosity = None
+        s.throats_av_sats = None

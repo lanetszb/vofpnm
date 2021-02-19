@@ -477,35 +477,35 @@ Relative permeability estimation:
  \begin{eqnarray}
 \label{eq:gas_velocity}
 \begin{gathered}
-\bar{v}_{g} = -\frac{k}{\mu_g} \frac{\Delta P}{\Delta L}
+\phi \bar{v}_{g}^*  = -\frac{k}{\mu_g} \frac{\Delta P_g^*}{\Delta L}
 \end{gathered}
 \end{eqnarray}
 
  \begin{eqnarray}
 \label{eq:water_velocity}
 \begin{gathered}
-\bar{v}\bar{S}_w = -\frac{k k_{rw}}{\mu_w} \frac{\Delta P}{\Delta L}
+\phi\bar{S}_w\bar{v}_{\omega} = -\frac{k k_{rw}}{\mu_w} \frac{\Delta P_{\omega}}{\Delta L}
 \end{gathered}
 \end{eqnarray}
 
  \begin{eqnarray}
 \label{eq:gas_velocity}
 \begin{gathered}
-\bar{v} \left(1-\bar{S}_w\right) = -\frac{k k_{rg}}{\mu_g} \frac{\Delta P}{\Delta L}
+\phi\left(1-\bar{S}_w\right)\bar{v}_{g} = -\frac{k k_{rg}}{\mu_g} \frac{\Delta P_g}{\Delta L}
 \end{gathered}
 \end{eqnarray}
 
  \begin{eqnarray}
 \label{eq:water_rel}
 \begin{gathered}
-k_{rw}=\bar{S}_w\frac{\mu_w}{\mu_g}\frac{\bar{v}}{v_g}
+k_{rw}=\bar{S}_w\frac{\mu_w}{\mu_g}\frac{\bar{v}_{\omega}}{\bar{v}_g^*} \frac{\Delta P_g^*}{\Delta P_{\omega}}
 \end{gathered}
 \end{eqnarray}
 
  \begin{eqnarray}
 \label{eq:water_rel}
 \begin{gathered}
-k_{rg}=\left(1-\bar{S}_w\right)\frac{\bar{v}}{v_g}
+k_{rg}=\left(1-\bar{S}_w\right)\frac{\bar{v}_{g}}{\bar{v}_g^*} \frac{\Delta P_g^*}{\Delta P_g}
 \end{gathered}
 \end{eqnarray}
 
