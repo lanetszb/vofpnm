@@ -68,18 +68,20 @@ class Cfd:
         s.ini.throats_viscs = throats_av_sats * liq_visc + (1. - throats_av_sats) * gas_visc
 
         coeff = 2. * abs(math.cos(s.ini.contact_angle)) * s.ini.ift
-        coeff = 0
 
         throats_widths = s.ini.throats_widths
         throats_depths = s.ini.throats_depths
 
+        # throats_capillary_pressures = dict(
+        #     (thr, (coeff / throats_widths[thr]) + (coeff / throats_depths[thr]))
+        #     for thr in throats_widths)
         throats_capillary_pressures = dict(
-            (thr, (coeff / throats_widths[thr]) + (coeff / throats_depths[thr]))
-            for thr in throats_widths)
+            (thr, (coeff / throats_widths[thr])) for thr in throats_widths)
         s.ini.throats_capillary_pressures = np.array(list(throats_capillary_pressures.values()))
 
         throats__coeffs = copy.deepcopy(s.ini.equation.throats_sats_grads ** 3)
-        # threshold = 0.1
+        # throats__coeffs = copy.deepcopy(s.ini.equation.throats_sats_grads)
+        # threshold = 0.0001
         # throats__coeffs = np.where(throats__coeffs > threshold, 1, throats__coeffs)
         # throats__coeffs = np.where(throats__coeffs <= threshold, 0, throats__coeffs)
         # throats__coeffs = np.where(throats__coeffs < -threshold, -1, throats__coeffs)
@@ -206,4 +208,3 @@ class Cfd:
         av_sats.append(av_sat)
 
 # if __name__ == '__main__':
-

@@ -63,12 +63,12 @@ def plot_conesrvation_check(ax, times_accum, massrates_net_accum, masses_inside_
 def plot_viscs_vels(ax, times, viscs, vels):
     ax.plot(times, viscs, ls="", marker="o", markersize=2,
             color="b", label='viscosities')
+    ax.set_xlabel('time, s')
+    ax.set_ylabel('Pa*s')
     ax1 = ax.twinx()
     ax1.plot(times, vels, ls="", marker="o", markersize=2,
-             label='velocities')
-    ax.set_xlabel('time')
-    ax.set_ylabel('m/sec')
-    ax1.set_ylabel('Pa*sec')
+             label='vol_rate_in')
+    ax1.set_ylabel('m3/s')
     ax.legend(loc=2)
     ax1.legend(loc=1)
 
@@ -76,6 +76,6 @@ def plot_viscs_vels(ax, times, viscs, vels):
 def plot_av_sat(ax, times, av_sats):
     ax.plot(times, av_sats, ls="", marker="o", markersize=2,
             color="b", label='sat')
-    ax.set_xlabel('time')
+    ax.set_xlabel('time, s')
     ax.set_ylabel('s0')
     plt.legend()

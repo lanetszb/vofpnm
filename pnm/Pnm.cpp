@@ -49,7 +49,8 @@ void Pnm::calcConductances(const std::vector<double> &densities,
         auto &density = densities[throat];
         auto &viscosity = viscosities[throat];
 
-        double resistance = 12. * viscosity * length / height / height / height / width;
+        // double resistance = 12. * viscosity * length / height / height / height / width;
+        double resistance = 12. * viscosity * length / width / width / width / height;
 
         // _conductances[throat] = density / resistance;
         _conductances[throat] = 1. / resistance;
@@ -181,6 +182,7 @@ void Pnm::cfdProcedure(const std::vector<double> &densities,
 
 void Pnm::calcThroatsMassFlows(const std::vector<double> &capillaryPressures) {
 
+    // Todo Replace mass flow on volumetric flows
     for (auto &[throat, conductance] : _conductances) {
         auto &pores = _netgrid->_throatsPores[throat];
         auto &normals = _netgrid->_normalsThroatsPores[throat];

@@ -69,6 +69,7 @@ class Ini:
         s.netgrid = Netgrid(s.pores_coordinates, s.throats_pores,
                             s.throats_widths, s.throats_depths, s.delta_V, s.min_cells_N,
                             s.inlet_pores, s.outlet_pores)
+
         #############
         # PNM
         #############
@@ -105,6 +106,7 @@ class Ini:
         #############
         # VOF
         #############
+
         s.sat_ini = float(get('Properties_vof', 'sat_ini'))
         s.sat_inlet = float(get('Properties_vof', 'sat_inlet'))
         s.sat_outlet = float(get('Properties_vof', 'sat_outlet'))
@@ -113,6 +115,7 @@ class Ini:
         s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
         for i in s.netgrid.types_cells['inlet']:
             s.sats_curr[i] = s.sat_inlet
+
         # fully fill inlet throats
         # s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
         # for throat in s.inlet_throats:

@@ -40,10 +40,12 @@ from vofpnm.cfd.cfd_class import Cfd
 from vofpnm.helpers import plot_rel_perms, plot_conesrvation_check, plot_viscs_vels, plot_av_sat
 
 ini = Ini(config_file=sys.argv[1])
+
 cfd = Cfd(ini)
 
 cfd.run_pnm()
 vol_rate_ref = cfd.calc_rel_flow_rate()
+print('vol_rate_ref: ', vol_rate_ref)
 
 cfd.calc_coupling_params()
 cfd.run_pnm()
@@ -131,19 +133,20 @@ while True:
     cfd.ini.equation.print_cour_numbers(cfd.ini.throats_velocities, cfd.ini.time_step)
     print(' time:', round((time_curr / cfd.ini.time_period * 100.), 2), '%.', '\n')
     cfd.run_pnm()
-
     cells_arrays = cfd.process_paraview_data()
+    print('vol_rate_in: ', vol_rate_in)
     if is_output_step:
         cfd.ini.netgrid.cells_arrays = cells_arrays
-    files_names.append(str(i + 1) + '.vtu')
-    files_descriptions.append(str(i + 1))
-    cfd.ini.netgrid.save_cells('inOut/' + files_names[-1])
-    save_files_collection_to_file(file_name, files_names, files_descriptions)
-    i += 1
-    is_output_step = False
+        files_names.append(str(i + 1) + '.vtu')
+        files_descriptions.append(str(i + 1))
+        cfd.ini.netgrid.save_cells('inOut/' + files_names[-1])
+        save_files_collection_to_file(file_name, files_names, files_descriptions)
+        i += 1
+        is_output_step = False
 
     throats_vels = np.absolute(np.array(list(cfd.ini.throats_velocities.values())))
-    vel = np.sum(cfd.ini.throats_volumes * throats_vels) / np.sum(cfd.ini.throats_volumes)
+    # vel = np.sum(cfd.ini.throats_volumes * throats_vels) / np.sum(cfd.ini.throats_volumes)
+    vel = vol_rate_in
 
     throats_viscs = cfd.ini.throats_viscs
     visc = np.sum(cfd.ini.throats_volumes * throats_viscs) / np.sum(cfd.ini.throats_volumes)
