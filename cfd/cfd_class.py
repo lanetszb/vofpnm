@@ -188,9 +188,9 @@ class Cfd:
         throats_volumes = s.ini.throats_volumes
         throats_av_sats = s.ini.equation.throats_av_sats
 
-        throats_vol_fluxes = np.array(list(dict(
+        throats_vol_fluxes = np.absolute(np.array(list(dict(
             (throat, float(s.ini.netgrid.throats_Ss[throat] * s.ini.throats_velocities[throat]))
-            for throat in s.ini.netgrid.throats_Ss).values()))
+            for throat in s.ini.netgrid.throats_Ss).values())))
 
         av_sat = np.sum(throats_volumes * throats_av_sats) / np.sum(throats_volumes)
         av_bl = np.sum(throats_vol_fluxes * throats_av_sats) / np.sum(throats_vol_fluxes)
