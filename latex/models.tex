@@ -475,33 +475,40 @@ Average density and viscosity inside the fracture can be calculated as follows:
   
 Relative permeability estimation:
 \begin{eqnarray}
-	\label{eq:gas_velocity}
+	\label{eq:single_0_velocity}
 	\begin{gathered}
-		\phi \bar{v}^*  = -\frac{k}{\mu^*} \frac{\Delta P^*}{\Delta L}
+		\phi \bar{v}_0^*  = -\frac{k}{\mu_0} \frac{\Delta P_0^*}{\Delta L}
 	\end{gathered}
 \end{eqnarray}
 \begin{eqnarray}
-	\label{eq:water_velocity}
+	\label{eq:single_1_velocity}
+	\begin{gathered}
+		\phi \bar{v}_1^*  = -\frac{k}{\mu_1} \frac{\Delta P_1^*}{\Delta L}
+	\end{gathered}
+\end{eqnarray}
+
+\begin{eqnarray}
+	\label{eq:dual_0_velocity}
 	\begin{gathered}
 		\phi\bar{S}_0\bar{v}_0 = -\frac{k k_{r0}}{\mu_0} \frac{\Delta P_0}{\Delta L}
 	\end{gathered}
 \end{eqnarray}
 \begin{eqnarray}
-	\label{eq:gas_velocity}
+	\label{eq:dual_1_velocity}
 	\begin{gathered}
 		\phi\left(1-\bar{S}_0\right)\bar{v}_1 = -\frac{k k_{r1}}{\mu_1} \frac{\Delta P_1}{\Delta L}
 	\end{gathered}
 \end{eqnarray}
 \begin{eqnarray}
-	\label{eq:water_rel}
+	\label{eq:rel_0}
 	\begin{gathered}
-		k_{r0}=\bar{S}_0\frac{\mu_0}{\mu^*}\frac{\bar{v}_0}{\bar{v}^*} \frac{\Delta P^*}{\Delta P_0}
+		k_{r0}=\bar{S}_0\frac{\mu_0}{\mu^*}\frac{\bar{v}_0}{\bar{v}_0^*} \frac{\Delta P^*}{\Delta P_0}
 	\end{gathered}
 \end{eqnarray}
 \begin{eqnarray}
-	\label{eq:water_rel}
+	\label{eq:rel_1}
 	\begin{gathered}
-		k_{r1}=\left(1-\bar{S}_0\right)\frac{\mu_1}{\mu^*}\frac{\bar{v}_{1}}{\bar{v}^*} \frac{\Delta P^*}{\Delta P_1}
+		k_{r1}=\left(1-\bar{S}_0\right)\frac{\mu_1}{\mu^*}\frac{\bar{v}_{1}}{\bar{v}_1^*} \frac{\Delta P^*}{\Delta P_1}
 	\end{gathered}
 \end{eqnarray}
 \begin{eqnarray}
