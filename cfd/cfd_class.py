@@ -59,25 +59,25 @@ class Cfd:
         s.ini.equation.calc_throats_sats_grads()
 
         throats_av_sats = s.ini.equation.throats_av_sats
-        liq_dens = s.ini.paramsPnm['liq_dens']
-        gas_dens = s.ini.paramsPnm['b_gas_dens']
-        liq_visc = s.ini.paramsPnm['liq_visc']
-        gas_visc = s.ini.paramsPnm['gas_visc']
+        dens_0 = s.ini.paramsPnm['dens_0']
+        dens1 = s.ini.paramsPnm['b_dens_fluid1']
+        visc_0 = s.ini.paramsPnm['visc_0']
+        visc_1 = s.ini.paramsPnm['visc_1']
 
-        s.ini.throats_denss = throats_av_sats * liq_dens + (1. - throats_av_sats) * gas_dens
-        s.ini.throats_viscs = throats_av_sats * liq_visc + (1. - throats_av_sats) * gas_visc
+        s.ini.throats_denss = throats_av_sats * dens_0 + (1. - throats_av_sats) * dens1
+        s.ini.throats_viscs = throats_av_sats * visc_0 + (1. - throats_av_sats) * visc_1
 
         coeff = 2. * abs(math.cos(s.ini.contact_angle)) * s.ini.ift
 
         throats_widths = s.ini.throats_widths
         throats_depths = s.ini.throats_depths
 
-        # throats_capillary_pressures = dict(
-        #     (thr, (coeff / throats_widths[thr]) + (coeff / throats_depths[thr]))
-        #     for thr in throats_widths)
         throats_capillary_pressures = dict(
-            (thr, (coeff / throats_widths[thr])) for thr in throats_widths)
-        s.ini.throats_capillary_pressures = np.array(list(throats_capillary_pressures.values()))
+            (thr, (coeff / throats_widths[thr]) + (coeff / throats_depths[thr]))
+            for thr in throats_widths)
+        # throats_capillary_pressures = dict(
+        #     (thr, (coeff / throats_widths[thr])) for thr in throats_widths)
+        throats_capillary_pressures = np.array(list(throats_capillary_pressures.values()))
 
         throats__coeffs = copy.deepcopy(s.ini.equation.throats_sats_grads ** 3)
         # throats__coeffs = copy.deepcopy(s.ini.equation.throats_sats_grads)
@@ -86,7 +86,7 @@ class Cfd:
         # throats__coeffs = np.where(throats__coeffs <= threshold, 0, throats__coeffs)
         # throats__coeffs = np.where(throats__coeffs < -threshold, -1, throats__coeffs)
         s.ini.throats_capillary_pressures = np.multiply(throats__coeffs,
-                                                        s.ini.throats_capillary_pressures)
+                                                        throats_capillary_pressures)
 
     def throats_values_to_cells(s, array):
         cells_values = np.full(s.ini.netgrid.cells_N, 0, dtype=np.float64)
@@ -153,7 +153,7 @@ class Cfd:
             first_cell = s.ini.netgrid.throats_cells[throat][0]
             velocity = s.ini.throats_velocities[throat]
             area = s.ini.netgrid.throats_Ss[throat]
-            density = s.ini.paramsPnm['liq_dens']
+            density = s.ini.paramsPnm['dens_0']
             sat = s.ini.equation.sats[s.ini.equation.i_curr][first_cell]
             mass_rate_in += velocity * area * sat * density
             vol_rate_in += velocity * area
@@ -165,7 +165,7 @@ class Cfd:
             last_cell = s.ini.netgrid.throats_cells[throat][-1]
             velocity = s.ini.throats_velocities[throat]
             area = s.ini.netgrid.throats_Ss[throat]
-            density = s.ini.paramsPnm['liq_dens']
+            density = s.ini.paramsPnm['dens_0']
             sat = s.ini.equation.sats[s.ini.equation.i_curr][last_cell]
             mass_rate_out += velocity * area * sat * density
             vol_rate_out += velocity * area
@@ -183,7 +183,8 @@ class Cfd:
 
         return flow_ref
 
-    def calc_rel_perms(s, rel_perms_0, rel_perms_1, ca_numbers, av_sats, flow_ref, flow_curr):
+    def calc_rel_perms(s, rel_perms_0, rel_perms_1, ca_numbers, av_sats,
+                       flow_ref, flow_curr, visc_ref):
         throats_volumes = s.ini.throats_volumes
         throats_av_sats = s.ini.equation.throats_av_sats
         av_sat = np.sum(throats_volumes * throats_av_sats) / np.sum(throats_volumes)
@@ -196,12 +197,16 @@ class Cfd:
         ca_numbers.append(ca_number)
 
         flow_rel = flow_curr / flow_ref
+        print('flow_rel:', flow_rel)
 
-        liq_visc = s.ini.paramsPnm['liq_visc']
-        gas_visc = s.ini.paramsPnm['gas_visc']
+        visc_0 = s.ini.paramsPnm['visc_0']
+        visc_1 = s.ini.paramsPnm['visc_1']
 
-        rel_perm_0 = av_sat * liq_visc * flow_rel / gas_visc
-        rel_perm_1 = (1. - av_sat) * flow_rel
+        # rel_perm_0 = av_sat * visc_0 * flow_rel / visc_1
+        # rel_perm_1 = (1. - av_sat) * flow_rel
+
+        rel_perm_0 = av_sat * flow_rel * visc_0 / visc_ref
+        rel_perm_1 = (1. - av_sat) * flow_rel * visc_1 / visc_ref
 
         rel_perms_0.append(rel_perm_0)
         rel_perms_1.append(rel_perm_1)

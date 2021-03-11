@@ -74,19 +74,25 @@ class Ini:
         # PNM
         #############
 
-        s.paramsPnm = {'a_gas_dens': float(get('Properties_gas', 'a_gas_dens')),
-                       'b_gas_dens': float(get('Properties_gas', 'b_gas_dens')),
-                       'gas_visc': float(get('Properties_gas', 'gas_visc')),
-                       'liq_dens': float(get('Properties_liquid', 'liq_dens')),
-                       'liq_visc': float(get('Properties_liquid', 'liq_visc')),
+        s.paramsPnm = {'a_dens_fluid1': float(get('Properties_fluid1', 'a_dens_fluid1')),
+                       'b_dens_fluid1': float(get('Properties_fluid1', 'b_dens_fluid1')),
+                       'visc_1': float(get('Properties_fluid1', 'visc_1')),
+                       'dens_0': float(get('Properties_fluid0', 'dens_0')),
+                       'visc_0': float(get('Properties_fluid0', 'visc_0')),
                        'pressure_in': float(get('Properties_simulation', 'pressure_in')),
                        'pressure_out': float(get('Properties_simulation', 'pressure_out')),
                        'it_accuracy': float(get('Properties_simulation', 'it_accuracy')),
                        'solver_method': str(get('Properties_simulation', 'solver_method'))}
 
         s.pore_n = s.netgrid.pores_N
-        s.throats_denss = np.tile(s.paramsPnm['b_gas_dens'], s.netgrid.throats_N)
-        s.throats_viscs = np.tile(s.paramsPnm['gas_visc'], s.netgrid.throats_N)
+        s.throats_denss = np.tile(s.paramsPnm['b_dens_fluid1'], s.netgrid.throats_N)
+
+        if s.paramsPnm['visc_1'] < s.paramsPnm['visc_0']:
+            s.visc_ref = s.paramsPnm['visc_1']
+        else:
+            s.visc_ref = s.paramsPnm['visc_0']
+
+        s.throats_viscs = np.tile(s.visc_ref, s.netgrid.throats_N)
         s.throats_capillary_pressures = np.tile(0., s.netgrid.throats_N)
 
         s.newman_pores_flows = {}

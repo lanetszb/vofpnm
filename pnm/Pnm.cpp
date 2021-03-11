@@ -49,8 +49,8 @@ void Pnm::calcConductances(const std::vector<double> &densities,
         auto &density = densities[throat];
         auto &viscosity = viscosities[throat];
 
-        // double resistance = 12. * viscosity * length / height / height / height / width;
-        double resistance = 12. * viscosity * length / width / width / width / height;
+        double resistance = 12. * viscosity * length / height / height / height / width;
+        // double resistance = 12. * viscosity * length / width / width / width / height;
 
         // _conductances[throat] = density / resistance;
         _conductances[throat] = 1. / resistance;

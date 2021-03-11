@@ -44,6 +44,7 @@ ini = Ini(config_file=sys.argv[1])
 cfd = Cfd(ini)
 
 cfd.run_pnm()
+
 vol_rate_ref = cfd.calc_rel_flow_rate()
 print('vol_rate_ref: ', vol_rate_ref)
 
@@ -57,8 +58,8 @@ av_sats = []
 
 throats_volumes = cfd.ini.throats_volumes
 throats_av_sats = cfd.ini.equation.throats_av_sats
-liq_dens = cfd.ini.paramsPnm['liq_dens']
-mass_already_in = copy.deepcopy(np.sum(throats_volumes * throats_av_sats * liq_dens))
+dens_0 = cfd.ini.paramsPnm['dens_0']
+mass_already_in = copy.deepcopy(np.sum(throats_volumes * throats_av_sats * dens_0))
 
 mass_rates_in = []
 mass_rates_out = []
@@ -121,12 +122,12 @@ while True:
     cfd.ini.equation.cfd_procedure_one_step(cfd.ini.throats_velocities, cfd.ini.time_step)
     cfd.calc_coupling_params()
 
-    mass_inside = copy.deepcopy(np.sum(throats_volumes * throats_av_sats * liq_dens))
+    mass_inside = copy.deepcopy(np.sum(throats_volumes * throats_av_sats * dens_0))
     masses_inside.append(mass_inside)
 
     vol_rate_in, vol_rate_out = cfd.calc_flow_rates(mass_rates_in, mass_rates_out)
     cfd.calc_rel_perms(rel_perms_0, rel_perms_1, capillary_numbers,
-                       av_sats, vol_rate_ref, vol_rate_in)
+                       av_sats, vol_rate_ref, vol_rate_in, cfd.ini.visc_ref)
 
     print('time_step: ', int(time_curr / cfd.ini.time_step))
     time.append(time_curr)
