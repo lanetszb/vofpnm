@@ -31,15 +31,15 @@ sys.path.append(os.path.join(current_path, '../../'))
 
 def plot_rel_perms(ax, av_sats, rel_perms_0, rel_perms_2, ca_numbers):
     ax.plot(av_sats, rel_perms_0, ls="", marker="o", markersize=2,
-            color="b", label='water')
+            color="b", label='0')
     ax.plot(av_sats, rel_perms_2, ls="", marker="o", markersize=2,
-            color="y", label='gas')
+            color="y", label='1')
     ax1 = ax.twinx()
 
     ax1.plot(av_sats, ca_numbers, ls="", marker="o", markersize=2,
              label='Ca')
-    ax.set_xlabel('Sw')
-    ax.set_ylabel('Krw')
+    ax.set_xlabel('S0')
+    ax.set_ylabel('Kr')
     ax1.set_ylabel('Ca')
     ax.legend(loc=2)
     ax1.legend(loc=1)
@@ -49,7 +49,7 @@ def plot_conesrvation_check(ax, times_accum, massrates_net_accum, masses_inside_
                             massrates_net_curr):
     ax.plot(times_accum, massrates_net_accum, ls="", marker="o", markersize=2,
             color="b", label='massrate_net_accum')
-    ax.set_xlabel('time')
+    ax.set_xlabel('time, s')
     ax.set_ylabel('mass')
     ax.plot(times_accum, masses_inside_accum, ls="", marker="o", markersize=2,
             color="y", label='mass_inside_accum')
@@ -78,4 +78,5 @@ def plot_av_sat(ax, times, av_sats):
             color="b", label='sat')
     ax.set_xlabel('time, s')
     ax.set_ylabel('s0')
+    ax.legend(loc=2)
     plt.legend()
