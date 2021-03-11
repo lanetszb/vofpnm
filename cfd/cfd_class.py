@@ -184,10 +184,16 @@ class Cfd:
         return flow_ref
 
     def calc_rel_perms(s, rel_perms_0, rel_perms_1, ca_numbers, av_sats,
-                       flow_ref, flow_curr, visc_ref):
+                       flow_0_ref, flow_1_ref, flow_curr, visc_ref):
         throats_volumes = s.ini.throats_volumes
         throats_av_sats = s.ini.equation.throats_av_sats
+
+        throats_vol_fluxes = np.array(list(dict(
+            (throat, float(s.ini.netgrid.throats_Ss[throat] * s.ini.throats_velocities[throat]))
+            for throat in s.ini.netgrid.throats_Ss).values()))
+
         av_sat = np.sum(throats_volumes * throats_av_sats) / np.sum(throats_volumes)
+        av_bl = np.sum(throats_vol_fluxes * throats_av_sats) / np.sum(throats_vol_fluxes)
 
         throats_viscs = s.ini.throats_viscs
         throats_velocities = np.array(list(s.ini.throats_velocities.values()))
@@ -196,17 +202,11 @@ class Cfd:
         ca_number = np.sum(throats_volumes * throats_ca_numbers) / np.sum(throats_volumes)
         ca_numbers.append(ca_number)
 
-        flow_rel = flow_curr / flow_ref
-        print('flow_rel:', flow_rel)
+        flow_rel_0 = flow_curr / flow_0_ref
+        flow_rel_1 = flow_curr / flow_1_ref
 
-        visc_0 = s.ini.paramsPnm['visc_0']
-        visc_1 = s.ini.paramsPnm['visc_1']
-
-        # rel_perm_0 = av_sat * visc_0 * flow_rel / visc_1
-        # rel_perm_1 = (1. - av_sat) * flow_rel
-
-        rel_perm_0 = av_sat * flow_rel * visc_0 / visc_ref
-        rel_perm_1 = (1. - av_sat) * flow_rel * visc_1 / visc_ref
+        rel_perm_0 = av_bl * flow_rel_0
+        rel_perm_1 = (1. - av_bl) * flow_rel_1
 
         rel_perms_0.append(rel_perm_0)
         rel_perms_1.append(rel_perm_1)

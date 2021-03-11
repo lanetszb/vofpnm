@@ -43,10 +43,15 @@ ini = Ini(config_file=sys.argv[1])
 
 cfd = Cfd(ini)
 
+visc_0 = ini.paramsPnm['visc_0']
+ini.throats_viscs = np.tile(visc_0, ini.netgrid.throats_N)
 cfd.run_pnm()
+ini.flow_0_ref = cfd.calc_rel_flow_rate()
 
-vol_rate_ref = cfd.calc_rel_flow_rate()
-print('vol_rate_ref: ', vol_rate_ref)
+visc_1 = ini.paramsPnm['visc_1']
+ini.throats_viscs = np.tile(visc_1, ini.netgrid.throats_N)
+cfd.run_pnm()
+ini.flow_1_ref = cfd.calc_rel_flow_rate()
 
 cfd.calc_coupling_params()
 cfd.run_pnm()
@@ -127,7 +132,7 @@ while True:
 
     vol_rate_in, vol_rate_out = cfd.calc_flow_rates(mass_rates_in, mass_rates_out)
     cfd.calc_rel_perms(rel_perms_0, rel_perms_1, capillary_numbers,
-                       av_sats, vol_rate_ref, vol_rate_in, cfd.ini.visc_ref)
+                       av_sats, ini.flow_0_ref, ini.flow_1_ref, vol_rate_in, cfd.ini.visc_ref)
 
     print('time_step: ', int(time_curr / cfd.ini.time_step))
     time.append(time_curr)

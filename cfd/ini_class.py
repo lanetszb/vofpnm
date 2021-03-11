@@ -108,6 +108,9 @@ class Ini:
 
         s.pnm = Pnm(s.paramsPnm, s.netgrid)
         s.throats_velocities = None
+        s.flow_0_ref = None
+        s.flow_1_ref = None
+
 
         #############
         # VOF
