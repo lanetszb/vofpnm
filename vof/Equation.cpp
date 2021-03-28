@@ -283,45 +283,6 @@ void Equation::cfdProcedure(std::map<uint32_t, double> &thrsVelocities) {
 
 }
 
-//
-// double Equation::calcFacesFlowRate(Eigen::Ref<Eigen::VectorXui64> faces) {
-//
-//     auto &poro = std::get<double>(_props->_params["poro"]);
-//
-//     double totalFlowRate = 0;
-//     for (uint64_t i = 0; i < faces.size(); i++) {
-//         auto &face = faces[i];
-//
-//         auto &neighborsCells = _netgrid->_neighborsCells[face];
-//         auto &conc_prev0 = _sats[iPrev](neighborsCells[0]);
-//         auto &conc_prev1 = _sats[iPrev](neighborsCells[1]);
-//
-//         auto &normalsNeighborsCells = _netgrid->_normalsNeighborsCells[face];
-//         auto &norm0 = normalsNeighborsCells[0];
-//         auto &norm1 = normalsNeighborsCells[1];
-//
-//         auto diffusivity0 = _props->calcD(conc_prev0);
-//         auto diffusivity1 = _props->calcD(conc_prev1);
-//
-//         // ToDo: axis not needed
-//         auto &axis = _netgrid->_facesAxes[face];
-//         // ToDo: consider more general case
-//         auto diffusivity = _convective->weighing("meanAverage",
-//                                                  diffusivity0, diffusivity1);
-//
-//         auto &conc_curr0 = _sats[iCurr](neighborsCells[0]);
-//         auto &conc_curr1 = _sats[iCurr](neighborsCells[1]);
-//         auto &dS = _netgrid->_facesSs[axis];
-//         auto &dL = _netgrid->_spacing[axis];
-//
-//         totalFlowRate -=
-//                 poro * diffusivity *
-//                 (norm0 * conc_curr0 + norm1 * conc_curr1) * dS / dL;
-//     }
-//
-//     return totalFlowRate;
-// }
-//
 std::vector<Eigen::Ref<Eigen::VectorXd>> Equation::getSats() {
     return Eigen::vectorGetter<Eigen::VectorXd>(_sats);
 }

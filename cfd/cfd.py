@@ -24,6 +24,7 @@
 import sys
 import os
 import numpy as np
+import pandas as pd
 import math
 import copy
 import configparser
@@ -37,7 +38,8 @@ sys.path.append(os.path.join(current_path, '../../'))
 from netgrid import save_files_collection_to_file
 from vofpnm.cfd.ini_class import Ini
 from vofpnm.cfd.cfd_class import Cfd
-from vofpnm.helpers import plot_rel_perms, plot_conesrvation_check, plot_viscs_vels, plot_av_sat
+from vofpnm.helpers import plot_rel_perms, plot_conesrvation_check, plot_viscs_vels, plot_av_sat, \
+    plot_capillary_pressure_curve, plot_capillary_pressures
 
 ini = Ini(config_file=sys.argv[1])
 
@@ -59,6 +61,7 @@ cfd.run_pnm()
 rel_perms_0 = []
 rel_perms_1 = []
 capillary_numbers = []
+capillary_pressures = []
 av_sats = []
 
 throats_volumes = cfd.ini.throats_volumes
@@ -73,6 +76,8 @@ masses_inside = []
 times = []
 viscs = []
 vels = []
+
+vol_rates_out = []
 
 #################
 # Paraview output
@@ -130,9 +135,14 @@ while True:
     mass_inside = copy.deepcopy(np.sum(throats_volumes * throats_av_sats * dens_0))
     masses_inside.append(mass_inside)
 
-    vol_rate_in, vol_rate_out = cfd.calc_flow_rates(mass_rates_in, mass_rates_out)
-    cfd.calc_rel_perms(rel_perms_0, rel_perms_1, capillary_numbers,
-                       av_sats, ini.flow_0_ref, ini.flow_1_ref, vol_rate_in, cfd.ini.visc_ref)
+    vol_rate_in, vol_rate_out, vol_rate_in_0, vol_rate_out_1 = cfd.calc_flow_rates(mass_rates_in,
+                                                                                   mass_rates_out)
+    vol_rates_out.append(vol_rate_out_1)
+    cfd.calc_rel_perms(rel_perms_0, rel_perms_1, capillary_numbers, capillary_pressures,
+                       av_sats, ini.flow_0_ref, ini.flow_1_ref, vol_rate_in_0, cfd.ini.visc_ref)
+
+    # cfd.calc_kunni_perms(rel_perms_0, rel_perms_1, capillary_numbers,
+    #                      av_sats, ini.flow_0_ref, ini.flow_1_ref, vol_rate_in_0, vol_rate_in_1)
 
     print('time_step: ', int(time_curr / cfd.ini.time_step))
     time.append(time_curr)
@@ -172,7 +182,12 @@ while True:
 fig1, ax1 = plt.subplots()
 plot_rel_perms(ax1, av_sats, rel_perms_0, rel_perms_1,
                capillary_numbers)
-#
+# capillary pressure
+fig2, axs = plt.subplots(1, 2, sharey='all')
+print('axs', axs)
+plot_capillary_pressure_curve(axs[0], av_sats, capillary_pressures)
+plot_capillary_pressures(axs[1], np.min(capillary_pressures),
+                         cfd.calc_throat_capillary_pressure_curr)
 # conservation
 mass_in_accum = np.cumsum(np.array(mass_rates_in) * np.array(time_steps))
 mass_out_accum = np.cumsum(np.array(mass_rates_out) * np.array(time_steps))
@@ -193,3 +208,13 @@ plot_viscs_vels(axs[1], times, viscs, vels)
 #
 # average saturation
 plot_av_sat(axs[2], times, av_sats)
+
+# df = pd.DataFrame({'sat': av_sats, 'rel_perms_0': rel_perms_0, 'rel_perms_1': rel_perms_1})
+# df = df.set_index('sat')
+# df.to_csv('inOut/rel_perms_no_gz.csv')
+#
+# df_accum = pd.DataFrame(
+#     {'times': times, 'vols_out': np.cumsum(np.array(vol_rates_out) * np.array(time_steps))})
+# df_accum = df_accum.set_index('times')
+#
+# df_accum.to_csv('inOut/vol_out_no_gz.csv')

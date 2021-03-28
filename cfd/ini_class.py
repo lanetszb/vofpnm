@@ -111,7 +111,6 @@ class Ini:
         s.flow_0_ref = None
         s.flow_1_ref = None
 
-
         #############
         # VOF
         #############
@@ -124,6 +123,15 @@ class Ini:
         s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
         for i in s.netgrid.types_cells['inlet']:
             s.sats_curr[i] = s.sat_inlet
+
+        s.contact_angle = float(get('Properties_vof', 'contact_angle'))
+        s.ift = float(get('Properties_vof', 'interfacial_tension'))
+
+        coeff = 2. * abs(math.cos(s.contact_angle)) * s.ift
+        throats_capillary_pressures_max = dict(
+            (thr, (coeff / s.throats_widths[thr]) + (coeff / s.throats_depths[thr]))
+            for thr in s.throats_widths)
+        s.throats_capillary_pressures_max = np.array(list(throats_capillary_pressures_max.values()))
 
         # fully fill inlet throats
         # s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
@@ -143,9 +151,6 @@ class Ini:
         s.sat_trim = float(get('Properties_vof', 'sat_trim'))
         s.params = {'time_period': s.time_period, 'const_time_step': s.const_time_step,
                     'tsm': s.tsm, 'sat_trim': s.sat_trim}
-
-        s.contact_angle = float(get('Properties_vof', 'contact_angle'))
-        s.ift = float(get('Properties_vof', 'interfacial_tension'))
 
         s.props = Props(s.params)
         s.local = Local(s.props, s.netgrid)
