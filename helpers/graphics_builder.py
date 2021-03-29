@@ -68,7 +68,7 @@ def plot_viscs_vels(ax, times, viscs, vels):
     ax.set_ylabel('Pa*s')
     ax1 = ax.twinx()
     ax1.plot(times, vels, ls="", marker="o", markersize=2,
-             label='vol_rate_in')
+             color="tab:olive", label='vol_rate_in')
     ax1.set_ylabel('m3/s')
     ax.legend(loc=2)
     ax1.legend(loc=1)

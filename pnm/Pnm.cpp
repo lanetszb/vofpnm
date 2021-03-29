@@ -180,15 +180,14 @@ void Pnm::cfdProcedure(const std::vector<double> &densities,
 
 }
 
-void Pnm::calcThroatsMassFlows(const std::vector<double> &capillaryPressures) {
+void Pnm::calcThroatsVolFlows(const std::vector<double> &capillaryPressures) {
 
-    // Todo Replace mass flow on volumetric flows
     for (auto &[throat, conductance] : _conductances) {
         auto &pores = _netgrid->_throatsPores[throat];
         auto &normals = _netgrid->_normalsThroatsPores[throat];
-        _throatsMassFlows[throat] = conductance * capillaryPressures[throat];
+        _throatsVolFlows[throat] = conductance * capillaryPressures[throat];
         for (uint32_t i = 0; i < pores.size(); i++)
-            _throatsMassFlows[throat] -= normals[i] * conductance * _pressures[pores[i]];
+            _throatsVolFlows[throat] -= normals[i] * conductance * _pressures[pores[i]];
     }
 
 }
@@ -203,21 +202,21 @@ void Pnm::calcPoresFlowRates() {
         auto &poresThroats = _netgrid->_poresThroats[pore];
         auto &normals = _netgrid->_normalsPoresThroats[pore];
         for (uint32_t i = 0; i < poresThroats.size(); i++)
-            _poresFlowRates[pore] += normals[i] * _throatsMassFlows[poresThroats[i]];
+            _poresFlowRates[pore] += normals[i] * _throatsVolFlows[poresThroats[i]];
     }
 
     for (auto &pore: _netgrid->_outletPores) {
         auto &poresThroats = _netgrid->_poresThroats[pore];
         auto &normals = _netgrid->_normalsPoresThroats[pore];
         for (uint32_t i = 0; i < poresThroats.size(); i++)
-            _poresFlowRates[pore] += normals[i] * _throatsMassFlows[poresThroats[i]];
+            _poresFlowRates[pore] += normals[i] * _throatsVolFlows[poresThroats[i]];
     }
 
     for (auto &pore: _netgrid->_inletPores) {
         auto &poresThroats = _netgrid->_poresThroats[pore];
         auto &normals = _netgrid->_normalsPoresThroats[pore];
         for (uint32_t i = 0; i < poresThroats.size(); i++)
-            _poresFlowRates[pore] += -normals[i] * _throatsMassFlows[poresThroats[i]];
+            _poresFlowRates[pore] += -normals[i] * _throatsVolFlows[poresThroats[i]];
     }
 
 }

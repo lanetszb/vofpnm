@@ -24,19 +24,10 @@
 import sys
 import os
 import numpy as np
-import math
 import copy
-import configparser
-import json
-from ast import literal_eval
-import matplotlib.pyplot as plt
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_path, '../../'))
-
-from netgrid import save_files_collection_to_file
-from vofpnm.cfd.ini_class import Ini
-from vofpnm.helpers import plot_rel_perms, plot_conesrvation_check, plot_viscs_vels, plot_av_sat
 
 
 class Cfd:
@@ -47,7 +38,7 @@ class Cfd:
         s.ini.pnm.cfd_procedure(s.ini.throats_denss, s.ini.throats_viscs,
                                 s.ini.throats_capillary_pressures,
                                 s.ini.newman_pores_flows, s.ini.dirichlet_pores_pressures)
-        s.ini.pnm.calc_throats_flow_rates(s.ini.throats_capillary_pressures)
+        s.ini.pnm.calc_throats_vol_flows(s.ini.throats_capillary_pressures)
 
         mass_flows = s.ini.pnm.throats_mass_flows
         cross_secs = s.ini.netgrid.throats_Ss
@@ -97,13 +88,11 @@ class Cfd:
         sats_to_cells = s.throats_values_to_cells(s.ini.equation.throats_av_sats)
         sats_grads_to_cells = s.throats_values_to_cells(s.ini.equation.throats_sats_grads)
         ca_pressures_to_cells = s.throats_values_to_cells(s.ini.throats_capillary_pressures)
-        pressures_to_cells = s.pores_values_to_cells(s.ini.pnm.pressures)
 
         throats_idxs = np.arange(s.ini.netgrid.throats_N, dtype=float)
         idxs_to_cells = s.throats_values_to_cells(throats_idxs)
         velocities = np.array(list(s.ini.throats_velocities.values()))
         velocities_to_cells = s.throats_values_to_cells(velocities)
-        densities_to_cells = s.throats_values_to_cells(s.ini.throats_denss)
         conductances = np.array(list(s.ini.pnm.conductances.values()))
         conductances_to_cells = s.throats_values_to_cells(conductances)
 
@@ -182,7 +171,7 @@ class Cfd:
         return flow_ref
 
     def calc_rel_perms(s, rel_perms_0, rel_perms_1, ca_numbers, ca_pressures, av_sats,
-                       flow_0_ref, flow_1_ref, flow_curr, visc_ref):
+                       flow_0_ref, flow_1_ref, flow_curr):
         throats_volumes = s.ini.throats_volumes
         throats_av_sats = s.ini.equation.throats_av_sats
 
@@ -236,5 +225,3 @@ class Cfd:
         rel_perms_0.append(vol_rate_in_0)
         rel_perms_1.append(vol_rate_out_1)
         av_sats.append(av_sat)
-
-    # if __name__ == '__main__':

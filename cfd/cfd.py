@@ -25,11 +25,7 @@ import sys
 import os
 import numpy as np
 import pandas as pd
-import math
 import copy
-import configparser
-import json
-from ast import literal_eval
 import matplotlib.pyplot as plt
 
 current_path = os.path.dirname(os.path.abspath(__file__))
@@ -75,8 +71,7 @@ masses_inside = []
 
 times = []
 viscs = []
-vels = []
-
+vol_rates_in = []
 vol_rates_out = []
 
 #################
@@ -139,7 +134,7 @@ while True:
                                                                                    mass_rates_out)
     vol_rates_out.append(vol_rate_out_1)
     cfd.calc_rel_perms(rel_perms_0, rel_perms_1, capillary_numbers, capillary_pressures,
-                       av_sats, ini.flow_0_ref, ini.flow_1_ref, vol_rate_in_0, cfd.ini.visc_ref)
+                       av_sats, ini.flow_0_ref, ini.flow_1_ref, vol_rate_in_0)
 
     # cfd.calc_kunni_perms(rel_perms_0, rel_perms_1, capillary_numbers,
     #                      av_sats, ini.flow_0_ref, ini.flow_1_ref, vol_rate_in_0, vol_rate_in_1)
@@ -161,15 +156,12 @@ while True:
         is_output_step = False
 
     throats_vels = np.absolute(np.array(list(cfd.ini.throats_velocities.values())))
-    # vel = np.sum(cfd.ini.throats_volumes * throats_vels) / np.sum(cfd.ini.throats_volumes)
-    vel = vol_rate_in
-
     throats_viscs = cfd.ini.throats_viscs
     visc = np.sum(cfd.ini.throats_volumes * throats_viscs) / np.sum(cfd.ini.throats_volumes)
 
     times.append(time_curr)
     viscs.append(visc)
-    vels.append(vel)
+    vol_rates_in.append(vol_rate_in)
 
     if is_last_step:
         break
@@ -204,11 +196,12 @@ plot_conesrvation_check(axs[0], times, massrates_net_accum,
                         masses_inside_accum, massrates_net_curr)
 
 # viscosities velocities
-plot_viscs_vels(axs[1], times, viscs, vels)
+plot_viscs_vels(axs[1], times, viscs, vol_rates_in)
 #
 # average saturation
 plot_av_sat(axs[2], times, av_sats)
 
+# Data output to csv
 # df = pd.DataFrame({'sat': av_sats, 'rel_perms_0': rel_perms_0, 'rel_perms_1': rel_perms_1})
 # df = df.set_index('sat')
 # df.to_csv('inOut/rel_perms_no_gz.csv')
