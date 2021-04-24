@@ -51,12 +51,13 @@ def plot_conesrvation_check(ax, times_accum, massrates_net_accum, masses_inside_
     ax.plot(times_accum, massrates_net_accum, ls="", marker="o", markersize=2,
             color="tab:blue", label='massrate_net_accum')
     ax.set_xlabel('time, s')
-    ax.set_ylabel('mass')
+    ax.set_ylabel('mass, kg')
     ax.plot(times_accum, masses_inside_accum, ls="", marker="o", markersize=2,
             color="tab:olive", label='mass_inside_accum')
     ax1 = ax.twinx()
     ax1.plot(times_accum, massrates_net_curr, ls="", marker="o", markersize=2,
              color="tab:purple", label='massrate_net_curr')
+    ax1.set_ylabel('kg/sec')
     ax.legend(loc=2)
     ax1.legend(loc=1)
 

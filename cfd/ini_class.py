@@ -126,9 +126,12 @@ class Ini:
         s.ift = float(get('Properties_vof', 'interfacial_tension'))
 
         coeff = 2. * abs(math.cos(s.contact_angle)) * s.ift
+        # coeff = 0.
         throats_capillary_pressures_max = dict(
-            (thr, (coeff / s.throats_widths[thr]) + (coeff / s.throats_depths[thr]))
-            for thr in s.throats_widths)
+            (thr, (coeff / s.throats_widths[thr])) for thr in s.throats_widths)
+        # throats_capillary_pressures_max = dict(
+        #     (thr, (coeff / s.throats_widths[thr]) + (coeff / s.throats_depths[thr]))
+        #     for thr in s.throats_widths)
         s.throats_capillary_pressures_max = np.array(list(throats_capillary_pressures_max.values()))
 
         # fully fill inlet throats
@@ -136,6 +139,13 @@ class Ini:
         # for throat in s.inlet_throats:
         #     for cell in s.netgrid.throats_cells[throat]:
         #         s.sats_curr[cell] = s.sat_inlet
+
+        # fully fill particular number of cells in inlet throats
+        s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
+        for throat in s.inlet_throats:
+            cells = s.netgrid.throats_cells[throat]
+            for i in range(4):
+                s.sats_curr[cells[i]] = s.sat_inlet
 
         s.sats_prev = copy.deepcopy(s.sats_curr)
         s.sats_arrays = {"sats_curr": s.sats_curr,

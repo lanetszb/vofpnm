@@ -44,6 +44,13 @@ cfd = Cfd(ini)
 visc_0 = ini.paramsPnm['visc_0']
 ini.throats_viscs = np.tile(visc_0, ini.netgrid.throats_N)
 cfd.run_pnm()
+print('velocity_thr0:', cfd.ini.throats_velocities[0] * 3. / 2.)
+print('velocity_thr1:', cfd.ini.throats_velocities[1] * 3. / 2.)
+print('velocity_thr2:', cfd.ini.throats_velocities[2] * 3. / 2.)
+print('velocity_thr3:', cfd.ini.throats_velocities[3] * 3. / 2.)
+print('velocity_thr4:', cfd.ini.throats_velocities[4] * 3. / 2.)
+print('velocity_thr5:', cfd.ini.throats_velocities[5] * 3. / 2.)
+
 ini.flow_0_ref = cfd.calc_rel_flow_rate()
 
 visc_1 = ini.paramsPnm['visc_1']
@@ -96,7 +103,7 @@ time = [0]
 time_steps = []
 cour_number = np.empty([])
 time_curr = 0
-time_output_freq = cfd.ini.time_period / 100.
+time_output_freq = cfd.ini.time_period / 500.
 time_bound = time_output_freq
 is_output_step = False
 is_last_step = False
@@ -149,7 +156,7 @@ while True:
     if is_output_step:
         cfd.ini.netgrid.cells_arrays = cells_arrays
         files_names.append(str(i + 1) + '.vtu')
-        files_descriptions.append(str(i + 1))
+        files_descriptions.append(str(time_curr + 20.))
         cfd.ini.netgrid.save_cells('inOut/' + files_names[-1])
         save_files_collection_to_file(file_name, files_names, files_descriptions)
         i += 1
@@ -176,7 +183,6 @@ plot_rel_perms(ax1, av_sats, rel_perms_0, rel_perms_1,
                capillary_numbers)
 # capillary pressure
 fig2, axs = plt.subplots(1, 2, sharey='all')
-print('axs', axs)
 plot_capillary_pressure_curve(axs[0], av_sats, capillary_pressures)
 plot_capillary_pressures(axs[1], np.min(capillary_pressures),
                          cfd.calc_throat_capillary_pressure_curr)

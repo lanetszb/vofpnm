@@ -47,16 +47,18 @@ class Cfd:
 
     def calc_throat_capillary_pressure_curr(s, sat_change, capillary_pressure_max):
         # Threshold
-        # throats_coeffs = copy.deepcopy(s.ini.equation.throats_sats_grads)
-        # threshold = 0.0001
-        # throats_coeffs = np.where(throats_coeffs > threshold, 1, throats_coeffs)
-        # throats_coeffs = np.where(throats_coeffs <= threshold, 0, throats_coeffs)
-        # throats_coeffs = np.where(throats_coeffs < -threshold, -1, throats_coeffs)
+        # throats_coeffs = sat_change
+        # threshold = 0.01
+        # throats_coeffs = np.where(throats_coeffs > threshold, 1., throats_coeffs)
+        # throats_coeffs = np.where(throats_coeffs <= threshold, 0., throats_coeffs)
+        # throats_coeffs = np.where(throats_coeffs < -threshold, -1., throats_coeffs)
 
         # Power func
         capillary_force = sat_change ** 3 * capillary_pressure_max
 
         return capillary_force
+
+        # return capillary_pressure_max * throats_coeffs
 
     def calc_coupling_params(s):
         s.ini.equation.calc_throats_av_sats()
@@ -68,10 +70,13 @@ class Cfd:
         visc_1 = s.ini.paramsPnm['visc_1']
         s.ini.throats_viscs = throats_av_sats * visc_0 + (1. - throats_av_sats) * visc_1
 
-        coeffs = copy.deepcopy(s.ini.equation.throats_sats_grads ** 3)
+        # coeffs = copy.deepcopy(s.ini.equation.throats_sats_grads ** 3)
+        coeffs = copy.deepcopy(s.ini.equation.throats_sats_grads)
         pcs_max = s.ini.throats_capillary_pressures_max
 
         s.ini.throats_capillary_pressures = s.calc_throat_capillary_pressure_curr(coeffs, pcs_max)
+        print(pcs_max)
+        print(s.ini.throats_capillary_pressures)
 
     def throats_values_to_cells(s, array):
         cells_values = np.full(s.ini.netgrid.cells_N, 0, dtype=np.float64)
