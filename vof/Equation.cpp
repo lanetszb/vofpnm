@@ -75,9 +75,12 @@ void Equation::processFaces(const std::set<uint32_t> &faces) {
             for (int i = 0; i < cells.size(); i++)
                 if (normals[i] * _convective->_betas[face] > 0)
                     upwindCellsIdxs.push_back(i);
-        } else if (cells.size() == 1 or normals[0] * _convective->_betas[face] > 0)
+        } else if (normals[0] * _convective->_betas[face] > 0)
             upwindCellsIdxs.push_back(0);
-        else
+        else if (cells.size() == 1 and normals[0] * _convective->_betas[face] < 0) {
+            // upwindCellsIdxs.push_back(0);
+            // _sats[iPrev][cells[0]] = 0.;
+        } else
             for (int i = 0; i < cells.size(); i++)
                 if (face != facesAss[i])
                     if (_convective->_betas[facesAss[i]] < 0)

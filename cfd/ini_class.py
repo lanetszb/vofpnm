@@ -141,10 +141,11 @@ class Ini:
         #         s.sats_curr[cell] = s.sat_inlet
 
         # fully fill particular number of cells in inlet throats
+        mult = 3. / 4.
         s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
         for throat in s.inlet_throats:
             cells = s.netgrid.throats_cells[throat]
-            for i in range(4):
+            for i in range(int(mult * len(cells))):
                 s.sats_curr[cells[i]] = s.sat_inlet
 
         s.sats_prev = copy.deepcopy(s.sats_curr)
@@ -156,6 +157,8 @@ class Ini:
         s.const_time_step = float(get('Properties_vof', 'const_time_step'))  # sec
         s.time_step_type = str(get('Properties_vof', 'time_step_type'))  # sec
         s.tsm = float(get('Properties_vof', 'tsm'))
+        s.round_output_time = float(get('Properties_vof', 'round_output_time'))
+        s.output_time_step = float(get('Properties_vof', 'output_time_step'))
         s.sat_trim = float(get('Properties_vof', 'sat_trim'))
         s.params = {'time_period': s.time_period, 'const_time_step': s.const_time_step,
                     'tsm': s.tsm, 'sat_trim': s.sat_trim}
