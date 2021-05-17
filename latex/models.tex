@@ -490,19 +490,25 @@ Relative permeability estimation:
 \begin{eqnarray}
 	\label{eq:rel_0}
 	\begin{gathered}
-		k_{r0}=F\left(\bar{S}_0\right)\frac{\bar{v}}{\bar{v}_0^*} \frac{\Delta P_{0}^*}{\Delta P_0}
+		k_{r0}=F\frac{\bar{v}}{\bar{v}_0^*} \frac{\Delta P_{0}^*}{\Delta P_0}
 	\end{gathered}
 \end{eqnarray}
 \begin{eqnarray}
 	\label{eq:rel_1}
 	\begin{gathered}
-		k_{r1}=\left(1-F\left(\bar{S}_0\right)\right)\frac{\bar{v}}{\bar{v}_1^*} \frac{\Delta P_{1}^*}{\Delta P_1}
+		k_{r1}=\left(\mathit{1}-F\right)\frac{\bar{v}}{\bar{v}_\mathit{1}^*} \frac{\Delta P_{\mathit{1}}^*}{\Delta P_\mathit{1}}
 	\end{gathered}
 \end{eqnarray}
 \begin{eqnarray}
 	\label{eq:sat_av}
 	\begin{gathered}
 		\bar{S}_0 = \frac{\sum_{i=1}^N S_{0}^i V^i}{\sum_{i=1}^N V^i}, \\
+	\end{gathered}
+\end{eqnarray}
+\begin{eqnarray}
+	\label{eq:bl_func}
+	\begin{gathered}
+		F = \frac{\sum_{i=\mathit{1}}^N S_{0}^i v^i V^i}{\sum_{i=\mathit{1}}^N v^iV^i}, \\
 	\end{gathered}
 \end{eqnarray}
 \begin{eqnarray}

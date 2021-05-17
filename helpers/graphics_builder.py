@@ -91,12 +91,12 @@ def plot_capillary_pressures(ax, capillary_pressure_max, capillary_pressure_curr
     for sat_change in sats_changes:
         capillary_pressures.append(capillary_pressure_curr_func(sat_change, capillary_pressure_max))
 
-    ax.plot(sats_changes, capillary_pressures, ls="", marker="o", markersize=2,
+    ax.plot(sats_changes, capillary_pressures, ls="-", marker="o", markersize=0,
             color="tab:blue", label='capillary pressure')
-    ax.set_xlabel('saturation change')
-    # ax.set_ylabel('capillary pressure, Pa')
-    ax.legend(loc=2)
-    plt.legend()
+    ax.set_xlabel('$\Delta S$')
+    ax.set_ylabel('$b$')
+    # ax.legend(loc=2)
+    # plt.legend()
 
 
 def plot_capillary_pressure_curve(ax, av_sats, capillary_pressures):

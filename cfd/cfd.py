@@ -28,15 +28,23 @@ import json
 import pandas as pd
 import copy
 import matplotlib.pyplot as plt
+import time as tm
+from matplotlib import rc
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_path, '../../'))
 
 from netgrid import save_files_collection_to_file
+from matplotlib.ticker import FormatStrFormatter
 from vofpnm.cfd.ini_class import Ini
 from vofpnm.cfd.cfd_class import Cfd
 from vofpnm.helpers import plot_rel_perms, plot_conesrvation_check, plot_viscs_vels, plot_av_sat, \
     plot_capillary_pressure_curve, plot_capillary_pressures
+
+rc('text', usetex=True)
+plt.rcParams["font.family"] = "Times New Roman"
+
+start_time = tm.time()
 
 ini = Ini(config_file=sys.argv[1])
 
@@ -100,10 +108,10 @@ times_u_mgn_avs_one_phase[str(0)] = av_vel
 one_phase_data['times_labels_u_mgns'] = times_labels_u_mgns_one_phase
 one_phase_data['times_u_mgn_av'] = av_vel
 
-json_one_phase_data = 'inOut/validation/one_phase_data23.json'
+# json_one_phase_data = 'inOut/validation/one_phase_data23.json'
 
-with open(json_one_phase_data, 'w') as f:
-    json.dump(one_phase_data, f, sort_keys=True, indent=4 * ' ', ensure_ascii=False)
+# with open(json_one_phase_data, 'w') as f:
+#     json.dump(one_phase_data, f, sort_keys=True, indent=4 * ' ', ensure_ascii=False)
 # ### validation with openfoam one-phase ###
 
 ini.flow_0_ref = cfd.calc_rel_flow_rate()
@@ -231,8 +239,10 @@ while True:
             thrs_alphas_to_output[str(thrs_to_label[i])] = cfd.ini.equation.throats_av_sats[
                 thrs_to_output[i]]
 
-        times_labels_alphas[str(round(time_curr, round_output_time))] = copy.deepcopy(thrs_alphas_to_output)
-        times_labels_u_mgns[str(round(time_curr, round_output_time))] = copy.deepcopy(thrs_velocities_to_output)
+        times_labels_alphas[str(round(time_curr, round_output_time))] = copy.deepcopy(
+            thrs_alphas_to_output)
+        times_labels_u_mgns[str(round(time_curr, round_output_time))] = copy.deepcopy(
+            thrs_velocities_to_output)
         ####### validation with openfoam #######
 
     throats_vels = np.absolute(np.array(list(cfd.ini.throats_velocities.values())))
@@ -244,11 +254,16 @@ while True:
     if is_last_step:
         break
 
+execution_time = tm.time() - start_time
+print("--- %s seconds ---" % execution_time)
 #############
 # Validation output
 #############
 two_phase_data['times_labels_alphas'] = times_labels_alphas
 two_phase_data['times_labels_u_mgns'] = times_labels_u_mgns
+two_phase_data['execution_time'] = execution_time
+two_phase_data['time_step'] = cfd.ini.time_step
+two_phase_data['grid_volume'] = cfd.ini.grid_volume
 
 json_file_u_mgns = 'inOut/validation/two_phase_data.json'
 
@@ -259,11 +274,26 @@ with open(json_file_u_mgns, 'w') as f:
 # Plotting
 #############
 
+# Plotting
+fig_width = 3.5
+y_scale = 0.9
+fig, ax = plt.subplots(figsize=(fig_width, fig_width * y_scale),
+                       tight_layout=True)
+
+
+# ax.set_ylim([-1., 1.])
+# ax.yaxis.set_major_locator(plt.LinearLocator(numticks=5))
+ax.margins(0.05)
+plot_capillary_pressures(ax, 1.0, cfd.calc_throat_capillary_pressure_curr)
+
+plt.savefig('inOut/capillary_press_satdiff.eps', format="eps",
+            bbox_inches='tight')
+
 # rel perms
 # fig1, ax1 = plt.subplots()
 # plot_rel_perms(ax1, av_sats, rel_perms_0, rel_perms_1,
 #                capillary_numbers)
-# # capillary pressure
+# # # capillary pressure
 # fig2, axs = plt.subplots(1, 2, sharey='all')
 # plot_capillary_pressure_curve(axs[0], av_sats, capillary_pressures)
 # plot_capillary_pressures(axs[1], np.min(capillary_pressures),

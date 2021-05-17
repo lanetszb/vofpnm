@@ -66,7 +66,7 @@ class Cfd:
 
         # Power func
         # capillary_force = sat_change ** 3 * capillary_pressure_max
-        #
+
         # return capillary_force
 
     def calc_coupling_params(s):
@@ -82,7 +82,7 @@ class Cfd:
         # coeffs = copy.deepcopy(s.ini.equation.throats_sats_grads ** 3)
         coeffs = copy.deepcopy(s.ini.equation.throats_sats_grads)
         pcs_max = s.ini.throats_capillary_pressures_max
-        print('pcs_max', pcs_max)
+        # print('pcs_max', pcs_max)
 
         s.ini.throats_capillary_pressures = s.calc_throat_capillary_pressure_curr(coeffs, pcs_max)
         # print(pcs_max)

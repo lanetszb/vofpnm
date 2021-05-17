@@ -141,7 +141,8 @@ class Ini:
         #         s.sats_curr[cell] = s.sat_inlet
 
         # fully fill particular number of cells in inlet throats
-        mult = 3. / 4.
+        # mult = 3. / 4.
+        mult = 0.751
         s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
         for throat in s.inlet_throats:
             cells = s.netgrid.throats_cells[throat]
@@ -178,3 +179,9 @@ class Ini:
         s.av_density = None
         s.av_viscosity = None
         s.throats_av_sats = None
+
+        #############
+        # Grid
+        #############
+
+        s.grid_volume = float(get('Properties_grid', 'delta_V'))
