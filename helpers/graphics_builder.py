@@ -93,8 +93,10 @@ def plot_capillary_pressures(ax, capillary_pressure_max, capillary_pressure_curr
 
     ax.plot(sats_changes, capillary_pressures, ls="-", marker="o", markersize=0,
             color="tab:blue", label='capillary pressure')
-    ax.set_xlabel('$\Delta S$')
-    ax.set_ylabel('$b$')
+    # ax.set_xlabel('$\Delta S$')
+    # ax.set_ylabel('$b$')
+    ax.set_xlabel('Delta S')
+    ax.set_ylabel('b')
     # ax.legend(loc=2)
     # plt.legend()
 

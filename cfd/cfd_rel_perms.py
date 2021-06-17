@@ -54,11 +54,13 @@ visc_0 = ini.paramsPnm['visc_0']
 visc_1 = ini.paramsPnm['visc_1']
 ini.throats_viscs = np.tile(visc_0, ini.netgrid.throats_N)
 cfd.run_pnm()
+throats_volumes = cfd.ini.throats_volumes
 
 # ### validation with openFoam ###
-two_phase_data = dict()
-times_labels_alphas = dict()
-times_labels_u_mgns = dict()
+test_case_vofpnm = dict()
+times_alpha_avs = dict()
+times_u_mgn_avs = dict()
+times_F_avs = dict()
 
 thrs_velocities_to_output = dict()
 thrs_alphas_to_output = dict()
@@ -66,18 +68,16 @@ thrs_alphas_to_output = dict()
 thrs_to_label = np.array([1, 2, 3, 4, 5, 6], dtype=int)
 thrs_to_output = np.array([0, 3, 6, 11, 12, 13], dtype=int)
 
+vols_by_throats = []
+for throat in thrs_to_output:
+    vols_by_throats.append(throats_volumes[throat])
+thrs_to_output_total_vol = np.sum(np.array(vols_by_throats))
+
 nus = {'1': visc_0, '2': visc_1}
 rhos = {'1': ini.paramsPnm['b_dens_fluid1'], '2': ini.paramsPnm['b_dens_fluid1']}
-two_phase_data['mus'] = nus
-two_phase_data['rhos'] = rhos
-two_phase_data['sigma'] = ini.ift
-
-times_labels_u_mgns_one_phase = dict()
-times_u_mgn_avs_one_phase = dict()
-
-one_phase_data = dict()
-one_phase_data['mu'] = nus['1']
-one_phase_data['rho'] = rhos['1']
+test_case_vofpnm['mus'] = nus
+test_case_vofpnm['rhos'] = rhos
+test_case_vofpnm['sigma'] = ini.ift
 
 # ### validation with openfoam one-phase ###
 for i in range(len(thrs_to_output)):
@@ -86,27 +86,24 @@ for i in range(len(thrs_to_output)):
     thrs_alphas_to_output[str(thrs_to_label[i])] = cfd.ini.equation.throats_av_sats[
         thrs_to_output[i]]
 
-throats_volumes = cfd.ini.throats_volumes
 throats_vels = np.absolute(np.array(list(cfd.ini.throats_velocities.values())))
 
 vels_by_vols = []
 for throat in thrs_to_output:
     vels_by_vols.append(throats_volumes[throat] * throats_vels[throat])
-av_vel = np.sum(np.array(vels_by_vols)) / np.sum(throats_volumes)
+u_mgn_av = np.sum(np.array(vels_by_vols)) / thrs_to_output_total_vol
+test_case_vofpnm['ref_u_mgn'] = u_mgn_av
 
 throats_widths = np.absolute(np.array(list(cfd.ini.throats_widths.values())))
 width_by_vols = []
 for throat in thrs_to_output:
     width_by_vols.append(throats_volumes[throat] * throats_widths[throat])
-av_width = np.sum(np.array(width_by_vols)) / np.sum(throats_volumes)
+av_width = np.sum(np.array(width_by_vols)) / thrs_to_output_total_vol
 
-one_phase_data['width'] = av_width
-two_phase_data['width'] = av_width
+test_case_vofpnm['width'] = av_width
 
-times_labels_u_mgns_one_phase[str(0)] = thrs_velocities_to_output
-times_u_mgn_avs_one_phase[str(0)] = av_vel
-one_phase_data['times_labels_u_mgns'] = times_labels_u_mgns_one_phase
-one_phase_data['times_u_mgn_av'] = av_vel
+# times_labels_u_mgns_one_phase[str(0)] = thrs_velocities_to_output
+# times_u_mgn_avs_one_phase[str(0)] = av_vel
 
 # json_one_phase_data = 'inOut/validation/one_phase_data23.json'
 
@@ -210,11 +207,9 @@ while True:
     vol_rate_in, vol_rate_out, vol_rate_in_0, vol_rate_out_1 = cfd.calc_flow_rates(mass_rates_in,
                                                                                    mass_rates_out)
     vol_rates_out.append(vol_rate_out_1)
+
     cfd.calc_rel_perms(rel_perms_0, rel_perms_1, capillary_numbers, capillary_pressures,
                        av_sats, ini.flow_0_ref, ini.flow_1_ref, vol_rate_in_0)
-
-    # cfd.calc_kunni_perms(rel_perms_0, rel_perms_1, capillary_numbers,
-    #                      av_sats, ini.flow_0_ref, ini.flow_1_ref, vol_rate_in_0, vol_rate_in_1)
 
     print('time_step: ', round(time_step_curr, round_output_time))
     time.append(time_curr)
@@ -233,16 +228,21 @@ while True:
         is_output_step = False
 
         ####### validation with openfoam #######
-        for i in range(len(thrs_to_output)):
-            thrs_velocities_to_output[str(thrs_to_label[i])] = np.abs(cfd.ini.throats_velocities[
-                                                                          thrs_to_output[i]])
-            thrs_alphas_to_output[str(thrs_to_label[i])] = cfd.ini.equation.throats_av_sats[
-                thrs_to_output[i]]
+        vels_by_vols = []
+        sats_by_vols = []
+        vels_by_sats = []
+        for throat in thrs_to_output:
+            vels_by_vols.append(throats_volumes[throat] * throats_vels[throat])
+            sats_by_vols.append(throats_volumes[throat] * throats_av_sats[throat])
+            vels_by_sats.append(
+                throats_volumes[throat] * throats_vels[throat] * throats_av_sats[throat])
+        u_mgn_av = np.sum(np.array(vels_by_vols)) / thrs_to_output_total_vol
+        alpha_av = np.sum(np.array(sats_by_vols)) / thrs_to_output_total_vol
+        F_av = np.sum(np.array(vels_by_sats)) / np.sum(np.array(vels_by_vols))
 
-        times_labels_alphas[str(round(time_curr, round_output_time))] = copy.deepcopy(
-            thrs_alphas_to_output)
-        times_labels_u_mgns[str(round(time_curr, round_output_time))] = copy.deepcopy(
-            thrs_velocities_to_output)
+        times_u_mgn_avs[str(round(time_curr, round_output_time))] = u_mgn_av
+        times_alpha_avs[str(round(time_curr, round_output_time))] = alpha_av
+        times_F_avs[str(round(time_curr, round_output_time))] = F_av
         ####### validation with openfoam #######
 
     throats_vels = np.absolute(np.array(list(cfd.ini.throats_velocities.values())))
@@ -257,74 +257,16 @@ while True:
 execution_time = tm.time() - start_time
 print("--- %s seconds ---" % execution_time)
 #############
-# Validation output
+# Rel perms validation output
 #############
-two_phase_data['times_labels_alphas'] = times_labels_alphas
-two_phase_data['times_labels_u_mgns'] = times_labels_u_mgns
-two_phase_data['execution_time'] = execution_time
-two_phase_data['time_step'] = cfd.ini.time_step
-two_phase_data['grid_volume'] = cfd.ini.grid_volume
+test_case_vofpnm['times_alpha_avs'] = times_alpha_avs
+test_case_vofpnm['times_u_mgn_avs'] = times_u_mgn_avs
+test_case_vofpnm['times_F_avs'] = times_F_avs
+test_case_vofpnm['execution_time'] = execution_time
+test_case_vofpnm['time_step'] = cfd.ini.time_step
+test_case_vofpnm['grid_volume'] = cfd.ini.grid_volume
 
-json_file_u_mgns = 'inOut/validation/two_phase_data.json'
+json_file_u_mgns = 'inOut/validation/test_case_vofpnm.json'
 
 with open(json_file_u_mgns, 'w') as f:
-    json.dump(two_phase_data, f, sort_keys=True, indent=4 * ' ', ensure_ascii=False)
-
-#############
-# Plotting
-#############
-
-# Plotting
-fig_width = 3.5
-y_scale = 0.9
-fig, ax = plt.subplots(figsize=(fig_width, fig_width * y_scale),
-                       tight_layout=True)
-
-
-ax.set_ylim([-1., 1.])
-ax.yaxis.set_major_locator(plt.LinearLocator(numticks=5))
-ax.margins(0.05)
-plot_capillary_pressures(ax, 1.0, cfd.calc_throat_capillary_pressure_curr)
-
-# plt.savefig('inOut/capillary_press_satdiff.eps', format="eps",
-#             bbox_inches='tight')
-
-# rel perms
-fig1, ax1 = plt.subplots()
-plot_rel_perms(ax1, av_sats, rel_perms_0, rel_perms_1,
-               capillary_numbers)
-# # capillary pressure
-fig2, axs = plt.subplots(1, 2, sharey='all')
-plot_capillary_pressure_curve(axs[0], av_sats, capillary_pressures)
-plot_capillary_pressures(axs[1], np.min(capillary_pressures),
-                         cfd.calc_throat_capillary_pressure_curr)
-# conservation
-mass_in_accum = np.cumsum(np.array(mass_rates_in) * np.array(time_steps))
-mass_out_accum = np.cumsum(np.array(mass_rates_out) * np.array(time_steps))
-massrates_net_accum = mass_in_accum - mass_out_accum
-
-masses_inside_accum = np.array(masses_inside) - mass_already_in
-
-mass_in_curr = np.array(mass_rates_in)
-mass_out_curr = np.array(mass_rates_out)
-massrates_net_curr = mass_in_curr - mass_out_curr
-#
-fig, axs = plt.subplots(3, sharex='all')
-plot_conesrvation_check(axs[0], times, massrates_net_accum,
-                        masses_inside_accum, massrates_net_curr)
-
-# # viscosities velocities
-plot_viscs_vels(axs[1], times, viscs, vol_rates_in)
-# average saturation
-plot_av_sat(axs[2], times, av_sats)
-
-# Data output to csv
-# df = pd.DataFrame({'sat': av_sats, 'rel_perms_0': rel_perms_0, 'rel_perms_1': rel_perms_1})
-# df = df.set_index('sat')
-# df.to_csv('inOut/rel_perms_no_gz.csv')
-#
-# df_accum = pd.DataFrame(
-#     {'times': times, 'vols_out': np.cumsum(np.array(vol_rates_out) * np.array(time_steps))})
-# df_accum = df_accum.set_index('times')
-#
-# df_accum.to_csv('inOut/vol_out_no_gz.csv')
+    json.dump(test_case_vofpnm, f, sort_keys=True, indent=4 * ' ', ensure_ascii=False)

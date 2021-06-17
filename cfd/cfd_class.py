@@ -55,19 +55,18 @@ class Cfd:
         # return capillary_pressure_max * throats_coeffs
 
         # Progressive threshold
-        throats_coeffs = np.zeros(sat_change.shape)
-        L = 0.05
-        throats_coeffs = np.where(sat_change <= -L, -1., throats_coeffs)
-        throats_coeffs = np.where((sat_change > -L) & (sat_change < L),
-                                  sat_change / L, throats_coeffs)
-        throats_coeffs = np.where(sat_change >= L, 1., throats_coeffs)
-
-        return capillary_pressure_max * throats_coeffs
+        # throats_coeffs = np.zeros(sat_change.shape)
+        # L = 0.05
+        # throats_coeffs = np.where(sat_change <= -L, -1., throats_coeffs)
+        # throats_coeffs = np.where((sat_change > -L) & (sat_change < L),
+        #                           sat_change / L, throats_coeffs)
+        # throats_coeffs = np.where(sat_change >= L, 1., throats_coeffs)
+        #
+        # return capillary_pressure_max * throats_coeffs
 
         # Power func
-        # capillary_force = sat_change ** 3 * capillary_pressure_max
-
-        # return capillary_force
+        capillary_force = sat_change ** 3 * capillary_pressure_max
+        return capillary_force
 
     def calc_coupling_params(s):
         s.ini.equation.calc_throats_av_sats()

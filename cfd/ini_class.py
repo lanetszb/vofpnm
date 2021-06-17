@@ -142,12 +142,12 @@ class Ini:
 
         # fully fill particular number of cells in inlet throats
         # mult = 3. / 4.
-        mult = 0.751
-        s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
-        for throat in s.inlet_throats:
-            cells = s.netgrid.throats_cells[throat]
-            for i in range(int(mult * len(cells))):
-                s.sats_curr[cells[i]] = s.sat_inlet
+        # mult = 0
+        # s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
+        # for throat in s.inlet_throats:
+        #     cells = s.netgrid.throats_cells[throat]
+        #     for i in range(int(mult * len(cells))):
+        #         s.sats_curr[cells[i]] = s.sat_inlet
 
         s.sats_prev = copy.deepcopy(s.sats_curr)
         s.sats_arrays = {"sats_curr": s.sats_curr,
