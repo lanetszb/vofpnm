@@ -61,17 +61,11 @@ test_case_vofpnm = dict()
 times_alpha_avs = dict()
 times_u_mgn_avs = dict()
 times_F_avs = dict()
+times_F_avs_new = dict()
+times_V_in = dict()
 
 thrs_velocities_to_output = dict()
 thrs_alphas_to_output = dict()
-
-thrs_to_label = np.array([1, 2, 3, 4, 5, 6], dtype=int)
-thrs_to_output = np.array([0, 3, 6, 11, 12, 13], dtype=int)
-
-vols_by_throats = []
-for throat in thrs_to_output:
-    vols_by_throats.append(throats_volumes[throat])
-thrs_to_output_total_vol = np.sum(np.array(vols_by_throats))
 
 nus = {'1': visc_0, '2': visc_1}
 rhos = {'1': ini.paramsPnm['b_dens_fluid1'], '2': ini.paramsPnm['b_dens_fluid1']}
@@ -80,36 +74,13 @@ test_case_vofpnm['rhos'] = rhos
 test_case_vofpnm['sigma'] = ini.ift
 
 # ### validation with openfoam one-phase ###
-for i in range(len(thrs_to_output)):
-    thrs_velocities_to_output[str(thrs_to_label[i])] = np.abs(cfd.ini.throats_velocities[
-                                                                  thrs_to_output[i]])
-    thrs_alphas_to_output[str(thrs_to_label[i])] = cfd.ini.equation.throats_av_sats[
-        thrs_to_output[i]]
-
 throats_vels = np.absolute(np.array(list(cfd.ini.throats_velocities.values())))
 
-vels_by_vols = []
-for throat in thrs_to_output:
-    vels_by_vols.append(throats_volumes[throat] * throats_vels[throat])
-u_mgn_av = np.sum(np.array(vels_by_vols)) / thrs_to_output_total_vol
+u_mgn_av = np.sum((throats_volumes * throats_vels)) / np.sum(throats_volumes)
 test_case_vofpnm['ref_u_mgn'] = u_mgn_av
-
 throats_widths = np.absolute(np.array(list(cfd.ini.throats_widths.values())))
-width_by_vols = []
-for throat in thrs_to_output:
-    width_by_vols.append(throats_volumes[throat] * throats_widths[throat])
-av_width = np.sum(np.array(width_by_vols)) / thrs_to_output_total_vol
-
+av_width = np.sum((throats_volumes * throats_widths)) / np.sum(throats_volumes)
 test_case_vofpnm['width'] = av_width
-
-# times_labels_u_mgns_one_phase[str(0)] = thrs_velocities_to_output
-# times_u_mgn_avs_one_phase[str(0)] = av_vel
-
-# json_one_phase_data = 'inOut/validation/one_phase_data23.json'
-
-# with open(json_one_phase_data, 'w') as f:
-#     json.dump(one_phase_data, f, sort_keys=True, indent=4 * ' ', ensure_ascii=False)
-# ### validation with openfoam one-phase ###
 
 ini.flow_0_ref = cfd.calc_rel_flow_rate()
 
@@ -157,7 +128,6 @@ files_names.append(str(0) + '.vtu')
 files_descriptions.append(str(0))
 cfd.ini.netgrid.save_cells('inOut/' + files_names[-1])
 save_files_collection_to_file(file_name, files_names, files_descriptions)
-#################
 #################
 
 time = [0]
@@ -228,22 +198,19 @@ while True:
         is_output_step = False
 
         ####### validation with openfoam #######
-        vels_by_vols = []
-        sats_by_vols = []
-        vels_by_sats = []
-        for throat in thrs_to_output:
-            vels_by_vols.append(throats_volumes[throat] * throats_vels[throat])
-            sats_by_vols.append(throats_volumes[throat] * throats_av_sats[throat])
-            vels_by_sats.append(
-                throats_volumes[throat] * throats_vels[throat] * throats_av_sats[throat])
-        u_mgn_av = np.sum(np.array(vels_by_vols)) / thrs_to_output_total_vol
-        alpha_av = np.sum(np.array(sats_by_vols)) / thrs_to_output_total_vol
-        F_av = np.sum(np.array(vels_by_sats)) / np.sum(np.array(vels_by_vols))
+        throats_vels = np.absolute(np.array(list(cfd.ini.throats_velocities.values())))
+        u_mgn_av = np.sum(throats_volumes * throats_vels) / np.sum(throats_volumes)
+        alpha_av = np.sum(throats_volumes * throats_av_sats) / np.sum(throats_volumes)
+        F_av = np.sum(throats_volumes * throats_vels * throats_av_sats) / np.sum(
+            throats_volumes * throats_vels)
 
         times_u_mgn_avs[str(round(time_curr, round_output_time))] = u_mgn_av
         times_alpha_avs[str(round(time_curr, round_output_time))] = alpha_av
         times_F_avs[str(round(time_curr, round_output_time))] = F_av
+        times_F_avs_new[str(round(time_curr, round_output_time))] = (vol_rate_out - vol_rate_out_1) / vol_rate_out
+        times_V_in[str(round(time_curr, round_output_time))] = vol_rate_in
         ####### validation with openfoam #######
+        print(str(round(time_curr, round_output_time)), time_curr)
 
     throats_vels = np.absolute(np.array(list(cfd.ini.throats_velocities.values())))
     throats_viscs = cfd.ini.throats_viscs
@@ -262,11 +229,14 @@ print("--- %s seconds ---" % execution_time)
 test_case_vofpnm['times_alpha_avs'] = times_alpha_avs
 test_case_vofpnm['times_u_mgn_avs'] = times_u_mgn_avs
 test_case_vofpnm['times_F_avs'] = times_F_avs
+test_case_vofpnm['times_F_avs_new'] = times_F_avs_new
 test_case_vofpnm['execution_time'] = execution_time
 test_case_vofpnm['time_step'] = cfd.ini.time_step
 test_case_vofpnm['grid_volume'] = cfd.ini.grid_volume
+test_case_vofpnm['total_volume'] = np.sum(throats_volumes)
+test_case_vofpnm['times_V_in'] = times_V_in
 
-json_file_u_mgns = 'inOut/validation/test_case_vofpnm.json'
+json_file_u_mgns = 'inOut/validation/demo_m1_ift_0.001_dp_200_drainage_vofpnm.json'
 
 with open(json_file_u_mgns, 'w') as f:
-    json.dump(test_case_vofpnm, f, sort_keys=True, indent=4 * ' ', ensure_ascii=False)
+    json.dump(test_case_vofpnm, f, sort_keys=False, indent=4 * ' ', ensure_ascii=False)

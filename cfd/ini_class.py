@@ -67,6 +67,7 @@ class Ini:
         s.netgrid = Netgrid(s.pores_coordinates, s.throats_pores,
                             s.throats_widths, s.throats_depths, s.delta_V, s.min_cells_N,
                             s.inlet_pores, s.outlet_pores)
+        s.netgrid.save_cells('cells.vtu')
 
         #############
         # PNM
@@ -117,18 +118,20 @@ class Ini:
         s.sat_inlet = float(get('Properties_vof', 'sat_inlet'))
         s.sat_outlet = float(get('Properties_vof', 'sat_outlet'))
 
-        # fill the first cell in the inlet throats
         s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
+        # fill the first cell in the inlet throats
         for i in s.netgrid.types_cells['inlet']:
             s.sats_curr[i] = s.sat_inlet
 
         s.contact_angle = float(get('Properties_vof', 'contact_angle'))
         s.ift = float(get('Properties_vof', 'interfacial_tension'))
+        s.power_coeff = float(get('Properties_vof', 'power_coeff'))
 
-        coeff = 2. * abs(math.cos(s.contact_angle)) * s.ift
+        coeff = 2. * abs(math.cos(math.radians(s.contact_angle))) * s.ift
         # coeff = 0.
         throats_capillary_pressures_max = dict(
             (thr, (coeff / s.throats_widths[thr])) for thr in s.throats_widths)
+        # print(throats_capillary_pressures_max)
         # throats_capillary_pressures_max = dict(
         #     (thr, (coeff / s.throats_widths[thr]) + (coeff / s.throats_depths[thr]))
         #     for thr in s.throats_widths)
@@ -185,3 +188,21 @@ class Ini:
         #############
 
         s.grid_volume = float(get('Properties_grid', 'delta_V'))
+
+    def initialize_sats(s):
+        s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
+        # fill the first cell in the inlet throats
+        for i in s.netgrid.types_cells['inlet']:
+            s.sats_curr[i] = s.sat_inlet
+
+        s.sats_prev = copy.deepcopy(s.sats_curr)
+        s.sats_arrays = {"sats_curr": s.sats_curr,
+                         "sats_prev": s.sats_prev}
+        s.netgrid.cells_arrays = s.sats_arrays
+
+        s.equation.sats = [s.sats_curr, s.sats_prev]
+        s.sats_init = copy.deepcopy(s.equation.sats[s.equation.i_curr])
+        s.sats_time = [s.sats_init]
+
+        s.throats_viscs = np.tile(s.visc_ref, s.netgrid.throats_N)
+        s.throats_capillary_pressures = np.tile(0., s.netgrid.throats_N)

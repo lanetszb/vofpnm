@@ -33,6 +33,7 @@ sys.path.append(os.path.join(current_path, '../../'))
 class Cfd:
     def __init__(s, ini):
         s.ini = ini
+        def_power_coeff = s.ini.power_coeff
 
     def run_pnm(s):
         s.ini.pnm.cfd_procedure(s.ini.throats_denss, s.ini.throats_viscs,
@@ -45,7 +46,8 @@ class Cfd:
         s.ini.throats_velocities = dict((thr, float(mass_flows[thr]) / cross_secs[thr])
                                         for thr in mass_flows)
 
-    def calc_throat_capillary_pressure_curr(s, sat_change, capillary_pressure_max):
+    def calc_throat_capillary_pressure_curr(s, sat_change, capillary_pressure_max,
+                                            power_coeff=1.5):
         # Threshold
         # throats_coeffs = sat_change
         # threshold = 0.0001
@@ -65,10 +67,21 @@ class Cfd:
         # return capillary_pressure_max * throats_coeffs
 
         # Power func
-        capillary_force = sat_change ** 3 * capillary_pressure_max
+        # capillary_force = sat_change ** 3 * capillary_pressure_max
+        # linear func
+        # capillary_force = sat_change * capillary_pressure_max
+
+        # Power func enhanced
+        pc_max = capillary_pressure_max
+        a = power_coeff
+        # capillary_force = np.where(sat_change == 0,
+        #                            0,
+        #                            sat_change / abs(sat_change) * pc_max * abs(sat_change) ** a)
+        capillary_force = np.sign(sat_change) * np.power(np.absolute(sat_change), a) * pc_max
+
         return capillary_force
 
-    def calc_coupling_params(s):
+    def calc_coupling_params(s, power_coeff=1.5):
         s.ini.equation.calc_throats_av_sats()
         s.ini.equation.calc_throats_sats_grads()
 
@@ -83,7 +96,9 @@ class Cfd:
         pcs_max = s.ini.throats_capillary_pressures_max
         # print('pcs_max', pcs_max)
 
-        s.ini.throats_capillary_pressures = s.calc_throat_capillary_pressure_curr(coeffs, pcs_max)
+        s.ini.throats_capillary_pressures = s.calc_throat_capillary_pressure_curr(coeffs,
+                                                                                  pcs_max,
+                                                                                  power_coeff)
         # print(pcs_max)
         # print(s.ini.throats_capillary_pressures)
 
@@ -98,7 +113,6 @@ class Cfd:
         return cells_values
 
     def process_paraview_data(s):
-
         sats_to_cells = s.throats_values_to_cells(s.ini.equation.throats_av_sats)
         sats_grads_to_cells = s.throats_values_to_cells(s.ini.equation.throats_sats_grads)
         ca_pressures_to_cells = s.throats_values_to_cells(s.ini.throats_capillary_pressures)
@@ -134,7 +148,6 @@ class Cfd:
         return cells_arrays
 
     def calc_delta_pressures(s):
-
         delta_pressures = []
         for pores in s.ini.netgrid.throats_pores.values():
             delta_pressures.append(
@@ -143,7 +156,6 @@ class Cfd:
         return delta_pressures
 
     def calc_flow_rates(s, mass_rates_in, mass_rates_out):
-
         mass_rate_in = 0.
         vol_rate_in = 0.
         vol_rate_in_0 = 0.
@@ -175,7 +187,6 @@ class Cfd:
         return vol_rate_in, vol_rate_out, vol_rate_in_0, vol_rate_out_1
 
     def calc_rel_flow_rate(s):
-
         flow_ref = 0
         for throat in s.ini.inlet_throats:
             velocity = s.ini.throats_velocities[throat]

@@ -41,8 +41,8 @@ from vofpnm.cfd.cfd_class import Cfd
 from vofpnm.helpers import plot_rel_perms, plot_conesrvation_check, plot_viscs_vels, plot_av_sat, \
     plot_capillary_pressure_curve, plot_capillary_pressures
 
-# rc('text', usetex=True)
-# plt.rcParams["font.family"] = "Times New Roman"
+rc('text', usetex=True)
+plt.rcParams["font.family"] = "Times New Roman"
 
 start_time = tm.time()
 
@@ -279,15 +279,13 @@ fig_width = 3.5
 y_scale = 0.9
 fig, ax = plt.subplots(figsize=(fig_width, fig_width * y_scale),
                        tight_layout=True)
-
-
-ax.set_ylim([-1., 1.])
-ax.yaxis.set_major_locator(plt.LinearLocator(numticks=5))
-ax.margins(0.05)
-plot_capillary_pressures(ax, 1.0, cfd.calc_throat_capillary_pressure_curr)
-
-# plt.savefig('inOut/capillary_press_satdiff.eps', format="eps",
-#             bbox_inches='tight')
+# ax.set_ylim([-1., 1.])
+# ax.yaxis.set_major_locator(plt.LinearLocator(numticks=5))
+plot_capillary_pressures(ax, 1.0, cfd.calc_throat_capillary_pressure_curr, 1.5)
+ax.margins(x=0, y=0.05)
+plt.savefig('inOut/capillary_press_satdiff.eps', format="eps",
+            bbox_inches='tight')
+sys.exit(0)
 
 # rel perms
 fig1, ax1 = plt.subplots()

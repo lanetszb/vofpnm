@@ -25,12 +25,13 @@ import sys
 import os
 import json
 import random
+import copy
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_path, '../../'))
 
 
-def create_net(dims, length, depth, width_range):
+def create_net(dims, length, width_range, width_step):
     dims = dims
     length = length
 
@@ -50,35 +51,52 @@ def create_net(dims, length, depth, width_range):
 
     throats_pores = dict()
     throat_n = 0
+    it_n = 0
     pore_n = 0
+    it_to_skip = [22, 30, 37, 40]
     for col in range(dims[1]):
         for row in range(dims[0] - 1):
-            throats_pores[throat_n] = [int(pore_n + row), int(pore_n + row + 1)]
-            throat_n += 1
+            if it_n not in it_to_skip:
+                throats_pores[throat_n] = [int(pore_n + row), int(pore_n + row + 1)]
+                throat_n += 1
+                it_n += 1
+            else:
+                throat_n += 0
+                it_n += 1
         pore_n += dims[0]
+    print('throat_n_horiz', throat_n)
 
     throat_n = len(throats_pores.keys())
+    it_n = len(throats_pores.keys())
     pore_n = int(0)
     for col in range(int(dims[1] - 1)):
-        throats_skip_freq = random.randint(2, int(dims[1]))
         for row in range(dims[0]):
             if pores_coordinates[int(pore_n + row)][0] != x_coord_min and \
                     pores_coordinates[int(pore_n + row)][0] != x_coord_max:
-                if row % throats_skip_freq != 0:
+                if it_n not in it_to_skip:
                     throats_pores[throat_n] = [int(pore_n + row), int(pore_n + row + dims[0])]
                     throat_n += 1
+                    it_n += 1
+                else:
+                    throat_n += 0
+                    it_n += 1
         pore_n += dims[0]
+    print('throat_n_vert', throat_n)
 
     throats_widths = dict()
     throats_depths = dict()
 
-    random_width_min = width_range[0]
-    random_width_max = width_range[1]
-    depth = depth
+    min_int = int(width_range[0] / width_step)
+    max_int = int(width_range[1] / width_step)
+    depth = width_step
 
     for throat in throats_pores.keys():
         throats_depths[throat] = depth
-        throats_widths[throat] = random.uniform(random_width_min, random_width_max)
+        if x_coord_min == pores_coordinates[throats_pores[throat][0]][0] or x_coord_min == \
+                pores_coordinates[throats_pores[throat][1]][0]:
+            throats_widths[throat] = width_step * int(max_int / 2) * 2
+        else:
+            throats_widths[throat] = width_step * random.randint(min_int / 2, max_int / 2) * 2
 
     inlet_pores = list()
     outlet_pores = list()
@@ -91,6 +109,9 @@ def create_net(dims, length, depth, width_range):
             inlet_pores.append(pore)
         if x_coord_max == pores_coordinates[pore][0]:
             outlet_pores.append(pore)
+
+    for pore in pores_coordinates.keys():
+        pores_coordinates[pore][1] = pores_coordinates[pore][1] + width_step * 6.
 
     inlet_throats = list()
     outlet_throats = list()
@@ -106,6 +127,24 @@ def create_net(dims, length, depth, width_range):
             if pore in pores:
                 outlet_throats.append(throat)
                 break
+
+    pxy = dict()
+    for key in throats_pores.keys():
+        pore0 = throats_pores[key][0]
+        pore1 = throats_pores[key][1]
+        pxy[key] = [copy.deepcopy(pores_coordinates[pore0]),
+                    copy.deepcopy(pores_coordinates[pore1])]
+    print(pxy)
+
+    for i in range(29):
+        pxy[i][0][1] = pxy[i][0][1] - throats_widths[i] / 2.
+        pxy[i][1][1] = pxy[i][1][1] + throats_widths[i] / 2.
+    for i in range(29, 46):
+        pxy[i][0][0] = pxy[i][0][0] - throats_widths[i] / 2.
+        pxy[i][1][0] = pxy[i][1][0] + throats_widths[i] / 2.
+
+    print('pxy', pxy)
+    print('width_step', width_step)
 
     boundary_pores = {'inlet_pores': inlet_pores, 'outlet_pores': outlet_pores}
     boundary_throats = {'inlet_throats': inlet_throats, 'outlet_throats': outlet_throats}
