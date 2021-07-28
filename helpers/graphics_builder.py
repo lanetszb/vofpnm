@@ -84,19 +84,21 @@ def plot_av_sat(ax, times, av_sats):
     plt.legend()
 
 
-def plot_capillary_pressures(ax, capillary_pressure_max, capillary_pressure_curr_func):
+def plot_capillary_pressures(ax, capillary_pressure_max, capillary_pressure_curr_func, power_coeff):
     sats_changes = np.linspace(-1.0, 1.0, 220)
     capillary_pressures = []
 
     for sat_change in sats_changes:
-        capillary_pressures.append(capillary_pressure_curr_func(sat_change, capillary_pressure_max))
+        capillary_pressures.append(capillary_pressure_curr_func(sat_change,
+                                                                capillary_pressure_max,
+                                                                power_coeff))
 
     ax.plot(sats_changes, capillary_pressures, ls="-", marker="o", markersize=0,
             color="tab:blue", label='capillary pressure')
-    # ax.set_xlabel('$\Delta S$')
-    # ax.set_ylabel('$b$')
-    ax.set_xlabel('Delta S')
-    ax.set_ylabel('b')
+    ax.set_xlabel('$\Delta S$')
+    ax.set_ylabel('$\gamma$')
+    # ax.set_xlabel('Delta S')
+    # ax.set_ylabel('b')
     # ax.legend(loc=2)
     # plt.legend()
 
