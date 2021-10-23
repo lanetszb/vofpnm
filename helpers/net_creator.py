@@ -30,7 +30,7 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_path, '../../'))
 
 
-def create_net(dims, length, depth, width_range):
+def create_net(dims, length, width_range, width_step):
     dims = dims
     length = length
 
@@ -51,6 +51,7 @@ def create_net(dims, length, depth, width_range):
     throats_pores = dict()
     throat_n = 0
     pore_n = 0
+
     for col in range(dims[1]):
         for row in range(dims[0] - 1):
             throats_pores[throat_n] = [int(pore_n + row), int(pore_n + row + 1)]
@@ -72,13 +73,17 @@ def create_net(dims, length, depth, width_range):
     throats_widths = dict()
     throats_depths = dict()
 
-    random_width_min = width_range[0]
-    random_width_max = width_range[1]
-    depth = depth
+    min_int = int(width_range[0] / width_step)
+    max_int = int(width_range[1] / width_step)
+    depth = width_step * 30
 
     for throat in throats_pores.keys():
         throats_depths[throat] = depth
-        throats_widths[throat] = random.uniform(random_width_min, random_width_max)
+        if x_coord_min == pores_coordinates[throats_pores[throat][0]][0] or x_coord_min == \
+                pores_coordinates[throats_pores[throat][1]][0]:
+            throats_widths[throat] = width_step * int(max_int / 2) * 2
+        else:
+            throats_widths[throat] = width_step * random.randint(min_int / 2, max_int / 2) * 2
 
     inlet_pores = list()
     outlet_pores = list()
@@ -91,6 +96,9 @@ def create_net(dims, length, depth, width_range):
             inlet_pores.append(pore)
         if x_coord_max == pores_coordinates[pore][0]:
             outlet_pores.append(pore)
+
+    for pore in pores_coordinates.keys():
+        pores_coordinates[pore][1] = pores_coordinates[pore][1] + width_step * 6.
 
     inlet_throats = list()
     outlet_throats = list()

@@ -47,7 +47,7 @@ class Cfd:
                                         for thr in mass_flows)
 
     def calc_throat_capillary_pressure_curr(s, sat_change, capillary_pressure_max,
-                                            power_coeff=1.5):
+                                            power_coeff=0.93):
         # Threshold
         # throats_coeffs = sat_change
         # threshold = 0.0001
@@ -81,7 +81,7 @@ class Cfd:
 
         return capillary_force
 
-    def calc_coupling_params(s, power_coeff=1.5):
+    def calc_coupling_params(s, power_coeff=0.93):
         s.ini.equation.calc_throats_av_sats()
         s.ini.equation.calc_throats_sats_grads()
 
@@ -131,6 +131,22 @@ class Cfd:
         sats = copy.deepcopy(s.ini.equation.sats[s.ini.equation.i_curr])
         output_1 = np.array(s.ini.local.output_1, dtype=float)
         output_2 = np.array(s.ini.local.output_2, dtype=float)
+
+        ### govnozaplatka for vof-pnm figure ###
+        # thrs_to_output = np.array([0, 3, 6, 11, 12, 13], dtype=int)
+        # thrs_to_output_errors = np.array(
+        #     [0.03102343213692101, None, None, 0.03579796023655951, None, None,
+        #      0.04515048524529482, None, None, None, None, 0.029713493963734,
+        #      0.038404150314642935, 0.037970478081370565], dtype=float)
+        #
+        # # thrs_to_output_errors = np.array(
+        # #     [0.11679919664651671, None, None, 1.5274739635244368, None, None,
+        # #      0.3458090603667309, None, None, None, None, 3.2285503090167533,
+        # #      0.8344315311376733, 0.32234159212433006], dtype=float)
+        #
+        # thrs_to_output_errors_to_cell = s.throats_values_to_cells(thrs_to_output_errors)
+        #
+        # print()
 
         cells_arrays = {
             'sat': sats,

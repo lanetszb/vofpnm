@@ -46,13 +46,13 @@ from vofpnm.helpers.calc_relperms import param_to_smooth, process_data_pnm, proc
 # rc('text', usetex=True)
 # plt.rcParams["font.family"] = "Times New Roman"
 ini = Ini('config/config.ini')
+json_vof_name = 'model_chess_vof_2_imb.json'
 results = dict()
 
 
 def get_error(power_coeff):
     print('power_coeff', power_coeff)
     ini.initialize_sats()
-    json_vof_name = 'demo_m1_ift_0.001_dp_200_drainage_vof.json'
     start_time = tm.time()
 
     cfd = Cfd(ini)
@@ -278,31 +278,18 @@ def get_error(power_coeff):
     kr0_error = np.mean(abs(kr_0_vof - kr_0_pnm))
     kr1_error = np.mean(abs(kr_1_vof - kr_1_pnm))
     kr_error = (kr0_error + kr1_error) / 2.
-    results[power_coeff]['kr_error'] = kr_error
     # sat_error = np.mean(abs(s_0_vof - s_0_pnm))
     # av_error = (kr_error + sat_error) / 2.
+    # results[power_coeff]['kr_error'] = av_error
+    results[power_coeff]['kr_error'] = kr_error
     print('kr_error', kr_error)
 
     return kr_error
 
 
-res = minimize_scalar(get_error, bounds=(0.5, 5), method='Bounded', options={'maxiter': 5,
+res = minimize_scalar(get_error, bounds=(0.5, 5), method='Bounded', options={'maxiter': 10,
                                                                              'xatol': 1e-04,
                                                                              'disp': 3})
-results_output = 'inOut/optimisation/test_output.json'
-
-with open(results_output, 'w') as f:
-    json.dump(results, f, sort_keys=False, indent=4 * ' ', ensure_ascii=False)
-with open(results_output) as f:
-    results = json.load(f)
-#
-for key in results:
-    plt.plot(results[key]['s_0_pnm'], results[key]['kr_0_pnm'], color="blue", linestyle='dashed',
-             linewidth=0.5)
-    plt.plot(results[key]['s_0_pnm'], results[key]['kr_1_pnm'], color="blue", linestyle='dashed',
-             linewidth=0.5)
-    plt.plot(results[key]['s_0_vof'], results[key]['kr_0_vof'], color="red")
-    plt.plot(results[key]['s_0_vof'], results[key]['kr_1_vof'], color="red")
 
 min_kr_error = 100.
 coeff_miner = str()
@@ -311,9 +298,29 @@ for key in results:
     if results[key]['kr_error'] < min_kr_error:
         min_kr_error = results[key]['kr_error']
         coeff_miner = key
+results['coeff_miner'] = coeff_miner
 
-plt.plot(results[coeff_miner]['s_0_pnm'], results[coeff_miner]['kr_0_pnm'], color="blue")
-plt.plot(results[coeff_miner]['s_0_pnm'], results[coeff_miner]['kr_1_pnm'], color="blue")
+results_output = 'inOut/optimisation/model2_opt_kr_imb.json'
+
+with open(results_output, 'w') as f:
+    json.dump(results, f, sort_keys=False, indent=4 * ' ', ensure_ascii=False)
+with open(results_output) as f:
+    results = json.load(f)
+#
+for key in results:
+    if key == 'coeff_miner':
+        break
+    plt.plot(results[key]['s_0_pnm'], results[key]['kr_0_pnm'], color="blue", linestyle='dashed',
+             linewidth=0.5)
+    plt.plot(results[key]['s_0_pnm'], results[key]['kr_1_pnm'], color="blue", linestyle='dashed',
+             linewidth=0.5)
+    plt.plot(results[key]['s_0_vof'], results[key]['kr_0_vof'], color="red")
+    plt.plot(results[key]['s_0_vof'], results[key]['kr_1_vof'], color="red")
+
+coeff_miner = results['coeff_miner']
+plt.plot(results[str(coeff_miner)]['s_0_pnm'], results[str(coeff_miner)]['kr_0_pnm'], color="blue")
+plt.plot(results[str(coeff_miner)]['s_0_pnm'], results[str(coeff_miner)]['kr_1_pnm'], color="blue")
+plt.title("Model 2")
 
 # json_file_u_mgns = 'inOut/validation/demo_m1_ift_0.001_dp_200_drainage_vofpnm.json'
 #
