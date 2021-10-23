@@ -26,20 +26,20 @@ import os
 import json
 import random
 
-from net_creator_article import create_net
+from net_creator_relperm_article import create_net
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_path, '../../'))
 
 dims = [int(6), int(6)]
 width_step = 4.2e-6
-length = width_step * 100.
-width_range = [width_step * 4.2, width_step * 10.]
+length = width_step * 40.
+width_range = [width_step * 6., width_step * 10.]
 
 network_dict = create_net(dims, length, width_range, width_step)
 
 # be cautious, do not rewrite existing models
-json_file_name = '../inOut/models/model_chess_test.txt'
+json_file_name = '../inOut/models/test.txt'
 
 with open(json_file_name, 'w') as f:
     json.dump(network_dict, f, sort_keys=True, indent=4 * ' ', ensure_ascii=False)

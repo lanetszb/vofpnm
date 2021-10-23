@@ -10,13 +10,13 @@
 
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> Matrix;
 typedef Matrix::InnerIterator MatrixIterator;
-typedef Eigen::BiCGSTAB<Eigen::SparseMatrix<double>> BiCGSTAB;
-typedef Eigen::LeastSquaresConjugateGradient<Eigen::SparseMatrix<double>>
+typedef Eigen::BiCGSTAB <Eigen::SparseMatrix<double>> BiCGSTAB;
+typedef Eigen::LeastSquaresConjugateGradient <Eigen::SparseMatrix<double>>
         LeastSqCG;
-typedef Eigen::SparseLU<Eigen::SparseMatrix<double>> SparseLU;
+typedef Eigen::SparseLU <Eigen::SparseMatrix<double>> SparseLU;
 
-Pnm::Pnm(const std::map<std::string, std::variant<int, double, std::string>> &paramsPnm,
-         std::shared_ptr<Netgrid> netgrid) :
+Pnm::Pnm(const std::map <std::string, std::variant<int, double, std::string>> &paramsPnm,
+         std::shared_ptr <Netgrid> netgrid) :
         _paramsPnm(paramsPnm),
         _netgrid(netgrid),
         _dim(netgrid->_poresPores.size()),
@@ -51,7 +51,8 @@ void Pnm::calcConductances(const std::vector<double> &densities,
         // 3D case
         // double resistance = 12. * viscosity * length / height / height / height / width;
         // 2D case
-        double resistance = 12. * viscosity * length / width / width / width / height;
+        auto corrFactor = 1.12;
+        double resistance = corrFactor * 12. * viscosity * length / width / width / width / height;
 
         // _conductances[throat] = density / resistance;
         _conductances[throat] = 1. / resistance;
@@ -98,7 +99,7 @@ void Pnm::fillMatrix(std::map<uint32_t, double> &poresFlows,
         for (MatrixIterator it(_matrix, i); it; ++it)
             it.valueRef() = 0;
 
-    std::set<uint32_t> groupedPores;
+    std::set <uint32_t> groupedPores;
     groupedPores.insert(_netgrid->_nonboundPores.begin(), _netgrid->_nonboundPores.end());
     groupedPores.insert(_netgrid->_deadendPores.begin(), _netgrid->_deadendPores.end());
 
@@ -196,7 +197,7 @@ void Pnm::calcThroatsVolFlows(const std::vector<double> &capillaryPressures) {
 
 void Pnm::calcPoresFlowRates() {
 
-    std::set<uint32_t> groupedPores;
+    std::set <uint32_t> groupedPores;
     groupedPores.insert(_netgrid->_nonboundPores.begin(), _netgrid->_nonboundPores.end());
     groupedPores.insert(_netgrid->_deadendPores.begin(), _netgrid->_deadendPores.end());
 
@@ -223,7 +224,7 @@ void Pnm::calcPoresFlowRates() {
 
 }
 
-void Pnm::calcTotalFlowRate(const std::set<uint32_t> &pores) {
+void Pnm::calcTotalFlowRate(const std::set <uint32_t> &pores) {
 
     _totFlowRate = 0;
 
@@ -231,13 +232,13 @@ void Pnm::calcTotalFlowRate(const std::set<uint32_t> &pores) {
         _totFlowRate += _poresFlowRates[pore];
 }
 
-void Pnm::setPressures(Eigen::Ref<Eigen::VectorXd> pressures) {
+void Pnm::setPressures(Eigen::Ref <Eigen::VectorXd> pressures) {
     if (_pressures.data() != pressures.data())
         delete _pressures.data();
     new(&_pressures) Eigen::Map<Eigen::VectorXd>(pressures.data(),
                                                  pressures.size());
 }
 
-Eigen::Ref<Eigen::VectorXd> Pnm::getPressures() {
+Eigen::Ref <Eigen::VectorXd> Pnm::getPressures() {
     return _pressures;
 }

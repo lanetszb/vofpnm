@@ -63,8 +63,8 @@ times_labels_u_mgns = dict()
 thrs_velocities_to_output = dict()
 thrs_alphas_to_output = dict()
 
-thrs_to_label = np.array([1, 2, 3, 4, 5, 6], dtype=int)
-thrs_to_output = np.array([0, 3, 6, 11, 12, 13], dtype=int)
+thrs_to_label = np.array(np.arange(len(ini.throats_viscs)), dtype=int)
+thrs_to_output = np.array(thrs_to_label, dtype=int)
 
 nus = {'1': visc_0, '2': visc_1}
 rhos = {'1': ini.paramsPnm['b_dens_fluid1'], '2': ini.paramsPnm['b_dens_fluid1']}
@@ -265,7 +265,7 @@ two_phase_data['execution_time'] = execution_time
 two_phase_data['time_step'] = cfd.ini.time_step
 two_phase_data['grid_volume'] = cfd.ini.grid_volume
 
-json_file_u_mgns = 'inOut/validation/two_phase_data.json'
+json_file_u_mgns = 'inOut/validation/test.json'
 
 with open(json_file_u_mgns, 'w') as f:
     json.dump(two_phase_data, f, sort_keys=True, indent=4 * ' ', ensure_ascii=False)
@@ -275,46 +275,46 @@ with open(json_file_u_mgns, 'w') as f:
 #############
 
 # Plotting
-fig_width = 3.5
-y_scale = 0.9
-fig, ax = plt.subplots(figsize=(fig_width, fig_width * y_scale),
-                       tight_layout=True)
-# ax.set_ylim([-1., 1.])
-# ax.yaxis.set_major_locator(plt.LinearLocator(numticks=5))
-plot_capillary_pressures(ax, 1.0, cfd.calc_throat_capillary_pressure_curr, 1.5)
-ax.margins(x=0, y=0.05)
-plt.savefig('inOut/capillary_press_satdiff.eps', format="eps",
-            bbox_inches='tight')
-sys.exit(0)
-
-# rel perms
-fig1, ax1 = plt.subplots()
-plot_rel_perms(ax1, av_sats, rel_perms_0, rel_perms_1,
-               capillary_numbers)
-# # capillary pressure
-fig2, axs = plt.subplots(1, 2, sharey='all')
-plot_capillary_pressure_curve(axs[0], av_sats, capillary_pressures)
-plot_capillary_pressures(axs[1], np.min(capillary_pressures),
-                         cfd.calc_throat_capillary_pressure_curr)
-# conservation
-mass_in_accum = np.cumsum(np.array(mass_rates_in) * np.array(time_steps))
-mass_out_accum = np.cumsum(np.array(mass_rates_out) * np.array(time_steps))
-massrates_net_accum = mass_in_accum - mass_out_accum
-
-masses_inside_accum = np.array(masses_inside) - mass_already_in
-
-mass_in_curr = np.array(mass_rates_in)
-mass_out_curr = np.array(mass_rates_out)
-massrates_net_curr = mass_in_curr - mass_out_curr
+# fig_width = 3.5
+# y_scale = 0.9
+# fig, ax = plt.subplots(figsize=(fig_width, fig_width * y_scale),
+#                        tight_layout=True)
+# # ax.set_ylim([-1., 1.])
+# # ax.yaxis.set_major_locator(plt.LinearLocator(numticks=5))
+# plot_capillary_pressures(ax, 1.0, cfd.calc_throat_capillary_pressure_curr, 1.5)
+# ax.margins(x=0, y=0.05)
+# plt.savefig('inOut/capillary_press_satdiff.eps', format="eps",
+#             bbox_inches='tight')
+# sys.exit(0)
 #
-fig, axs = plt.subplots(3, sharex='all')
-plot_conesrvation_check(axs[0], times, massrates_net_accum,
-                        masses_inside_accum, massrates_net_curr)
-
-# # viscosities velocities
-plot_viscs_vels(axs[1], times, viscs, vol_rates_in)
-# average saturation
-plot_av_sat(axs[2], times, av_sats)
+# # rel perms
+# fig1, ax1 = plt.subplots()
+# plot_rel_perms(ax1, av_sats, rel_perms_0, rel_perms_1,
+#                capillary_numbers)
+# # # capillary pressure
+# fig2, axs = plt.subplots(1, 2, sharey='all')
+# plot_capillary_pressure_curve(axs[0], av_sats, capillary_pressures)
+# plot_capillary_pressures(axs[1], np.min(capillary_pressures),
+#                          cfd.calc_throat_capillary_pressure_curr)
+# # conservation
+# mass_in_accum = np.cumsum(np.array(mass_rates_in) * np.array(time_steps))
+# mass_out_accum = np.cumsum(np.array(mass_rates_out) * np.array(time_steps))
+# massrates_net_accum = mass_in_accum - mass_out_accum
+#
+# masses_inside_accum = np.array(masses_inside) - mass_already_in
+#
+# mass_in_curr = np.array(mass_rates_in)
+# mass_out_curr = np.array(mass_rates_out)
+# massrates_net_curr = mass_in_curr - mass_out_curr
+# #
+# fig, axs = plt.subplots(3, sharex='all')
+# plot_conesrvation_check(axs[0], times, massrates_net_accum,
+#                         masses_inside_accum, massrates_net_curr)
+#
+# # # viscosities velocities
+# plot_viscs_vels(axs[1], times, viscs, vol_rates_in)
+# # average saturation
+# plot_av_sat(axs[2], times, av_sats)
 
 # Data output to csv
 # df = pd.DataFrame({'sat': av_sats, 'rel_perms_0': rel_perms_0, 'rel_perms_1': rel_perms_1})

@@ -53,7 +53,27 @@ def create_net(dims, length, width_range, width_step):
     throat_n = 0
     it_n = 0
     pore_n = 0
-    it_to_skip = [22, 30, 37, 40]
+
+    # model 1
+    # it_to_skip = []
+    # model 2
+    # it_to_skip = [22, 30, 37, 40]
+    # model 3
+    # it_to_skip = [7, 39, 46]
+    # model 4
+    # it_to_skip = [8, 17, 21]
+    # model 5
+    # it_to_skip = [30, 35, 41, 44, 46]
+    # model 6
+    it_to_skip = [23, 35, 37, 40, 45]
+    # model 6
+    # it_to_skip = [17, 34, 47]
+
+    # model final_3_1 enlarged
+    # it_to_skip = [3, 10, 16, 24, 29, 37]
+    # model final_3_2 enlarged
+    # it_to_skip = [10, 16, 24, 29]
+
     for col in range(dims[1]):
         for row in range(dims[0] - 1):
             if it_n not in it_to_skip:
@@ -64,8 +84,12 @@ def create_net(dims, length, width_range, width_step):
                 throat_n += 0
                 it_n += 1
         pore_n += dims[0]
-    print('throat_n_horiz', throat_n)
+    throat_n_horiz = copy.deepcopy(throat_n)
 
+    # model final_3_1 enlarged
+    # it_to_skip = [36, 58]
+    # model final_3_2 enlarged
+    # it_to_skip = [38, 60]
     throat_n = len(throats_pores.keys())
     it_n = len(throats_pores.keys())
     pore_n = int(0)
@@ -81,14 +105,14 @@ def create_net(dims, length, width_range, width_step):
                     throat_n += 0
                     it_n += 1
         pore_n += dims[0]
-    print('throat_n_vert', throat_n)
+    throat_n_vert = throat_n
 
     throats_widths = dict()
     throats_depths = dict()
 
     min_int = int(width_range[0] / width_step)
     max_int = int(width_range[1] / width_step)
-    depth = width_step
+    depth = width_step * 30
 
     for throat in throats_pores.keys():
         throats_depths[throat] = depth
@@ -136,10 +160,10 @@ def create_net(dims, length, width_range, width_step):
                     copy.deepcopy(pores_coordinates[pore1])]
     print(pxy)
 
-    for i in range(29):
+    for i in range(throat_n_horiz):
         pxy[i][0][1] = pxy[i][0][1] - throats_widths[i] / 2.
         pxy[i][1][1] = pxy[i][1][1] + throats_widths[i] / 2.
-    for i in range(29, 46):
+    for i in range(throat_n_horiz, throat_n_vert):
         pxy[i][0][0] = pxy[i][0][0] - throats_widths[i] / 2.
         pxy[i][1][0] = pxy[i][1][0] + throats_widths[i] / 2.
 

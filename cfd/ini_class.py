@@ -67,6 +67,8 @@ class Ini:
         s.netgrid = Netgrid(s.pores_coordinates, s.throats_pores,
                             s.throats_widths, s.throats_depths, s.delta_V, s.min_cells_N,
                             s.inlet_pores, s.outlet_pores)
+        # print(np.mean(list(s.netgrid.throats_dVs.values())))
+        # print('cells_N', s.netgrid.cells_N)
         s.netgrid.save_cells('cells.vtu')
 
         #############
@@ -129,12 +131,12 @@ class Ini:
 
         coeff = 2. * abs(math.cos(math.radians(s.contact_angle))) * s.ift
         # coeff = 0.
-        throats_capillary_pressures_max = dict(
-            (thr, (coeff / s.throats_widths[thr])) for thr in s.throats_widths)
-        # print(throats_capillary_pressures_max)
         # throats_capillary_pressures_max = dict(
-        #     (thr, (coeff / s.throats_widths[thr]) + (coeff / s.throats_depths[thr]))
-        #     for thr in s.throats_widths)
+        #     (thr, (coeff / s.throats_widths[thr])) for thr in s.throats_widths)
+        # print(throats_capillary_pressures_max)
+        throats_capillary_pressures_max = dict(
+            (thr, (coeff / s.throats_widths[thr]) + (coeff / s.throats_depths[thr]))
+            for thr in s.throats_widths)
         s.throats_capillary_pressures_max = np.array(list(throats_capillary_pressures_max.values()))
 
         # fully fill inlet throats
@@ -144,13 +146,12 @@ class Ini:
         #         s.sats_curr[cell] = s.sat_inlet
 
         # fully fill particular number of cells in inlet throats
-        # mult = 3. / 4.
-        # mult = 0
-        # s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
-        # for throat in s.inlet_throats:
-        #     cells = s.netgrid.throats_cells[throat]
-        #     for i in range(int(mult * len(cells))):
-        #         s.sats_curr[cells[i]] = s.sat_inlet
+        mult = 0.0476
+        s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
+        for throat in s.inlet_throats:
+            cells = s.netgrid.throats_cells[throat]
+            for i in range(int(mult * len(cells))):
+                s.sats_curr[cells[i]] = s.sat_inlet
 
         s.sats_prev = copy.deepcopy(s.sats_curr)
         s.sats_arrays = {"sats_curr": s.sats_curr,
@@ -190,10 +191,17 @@ class Ini:
         s.grid_volume = float(get('Properties_grid', 'delta_V'))
 
     def initialize_sats(s):
+        # s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
+        # # fill the first cell in the inlet throats
+        # for i in s.netgrid.types_cells['inlet']:
+        #     s.sats_curr[i] = s.sat_inlet
+        mult = 0.0476
+        # mult = 0
         s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
-        # fill the first cell in the inlet throats
-        for i in s.netgrid.types_cells['inlet']:
-            s.sats_curr[i] = s.sat_inlet
+        for throat in s.inlet_throats:
+            cells = s.netgrid.throats_cells[throat]
+            for i in range(int(mult * len(cells))):
+                s.sats_curr[cells[i]] = s.sat_inlet
 
         s.sats_prev = copy.deepcopy(s.sats_curr)
         s.sats_arrays = {"sats_curr": s.sats_curr,
