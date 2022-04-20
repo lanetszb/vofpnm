@@ -48,14 +48,8 @@ void Pnm::calcConductances(const std::vector<double> &densities,
         auto &length = _netgrid->_throatsLs[throat];
         auto &density = densities[throat];
         auto &viscosity = viscosities[throat];
-        // 3D case
-        // double resistance = 12. * viscosity * length / height / height / height / width;
-        // 2D case
         auto corrFactor = 1.;
-        // auto corrFactor = 1.77;
         double resistance = corrFactor * 12. * viscosity * length / width / width / width / height;
-
-        // _conductances[throat] = density / resistance;
         _conductances[throat] = 1. / resistance;
     }
 

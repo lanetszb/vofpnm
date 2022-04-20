@@ -124,16 +124,3 @@ def create_net(dims, length, width_range, width_step):
                'boundary_pores': boundary_pores, 'boundary_throats': boundary_throats}
 
     return network
-
-    # for throat, pores in throats_pores.items():
-    #     for pore in inlet_pores:
-    #         if pore in pores and pores_coordinates[throats_pores[throat][0]][0] != \
-    #                 pores_coordinates[throats_pores[throat][1]][0]:
-    #             inlet_throats.append(throat)
-    #             break
-    # for throat, pores in throats_pores.items():
-    #     for pore in outlet_pores:
-    #         if pore in pores and pores_coordinates[throats_pores[throat][0]][0] != \
-    #                 pores_coordinates[throats_pores[throat][1]][0]:
-    #             outlet_throats.append(throat)
-    #             break

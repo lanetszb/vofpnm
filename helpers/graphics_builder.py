@@ -30,22 +30,6 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_path, '../../'))
 
 
-def plot_rel_perms(ax, av_sats, rel_perms_0, rel_perms_2, ca_numbers):
-    ax.plot(av_sats, rel_perms_0, ls="", marker="o", markersize=2,
-            color="tab:blue", label='0')
-    ax.plot(av_sats, rel_perms_2, ls="", marker="o", markersize=2,
-            color="tab:olive", label='1')
-    ax1 = ax.twinx()
-
-    # ax1.plot(av_sats, ca_numbers, ls="", marker="o", markersize=2,
-    #          label='Ca')
-    ax.set_xlabel('S0')
-    ax.set_ylabel('Kr')
-    # ax1.set_ylabel('Ca')
-    ax.legend(loc=2)
-    # ax1.legend(loc=1)
-
-
 def plot_conesrvation_check(ax, times_accum, massrates_net_accum, masses_inside_accum,
                             massrates_net_curr):
     ax.plot(times_accum, massrates_net_accum, ls="", marker="o", markersize=2,

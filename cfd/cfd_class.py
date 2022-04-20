@@ -33,7 +33,6 @@ sys.path.append(os.path.join(current_path, '../../'))
 class Cfd:
     def __init__(s, ini):
         s.ini = ini
-        def_power_coeff = s.ini.power_coeff
 
     def run_pnm(s):
         s.ini.pnm.cfd_procedure(s.ini.throats_denss, s.ini.throats_viscs,
@@ -48,28 +47,6 @@ class Cfd:
 
     def calc_throat_capillary_pressure_curr(s, sat_change, capillary_pressure_max,
                                             power_coeff=0.94):
-        # Threshold
-        # throats_coeffs = sat_change
-        # threshold = 0.0001
-        # throats_coeffs = np.where(throats_coeffs > threshold, 1., throats_coeffs)
-        # throats_coeffs = np.where(throats_coeffs <= threshold, 0., throats_coeffs)
-        # throats_coeffs = np.where(throats_coeffs < -threshold, -1., throats_coeffs)
-        # return capillary_pressure_max * throats_coeffs
-
-        # Progressive threshold
-        # throats_coeffs = np.zeros(sat_change.shape)
-        # L = 0.05
-        # throats_coeffs = np.where(sat_change <= -L, -1., throats_coeffs)
-        # throats_coeffs = np.where((sat_change > -L) & (sat_change < L),
-        #                           sat_change / L, throats_coeffs)
-        # throats_coeffs = np.where(sat_change >= L, 1., throats_coeffs)
-        #
-        # return capillary_pressure_max * throats_coeffs
-
-        # Power func
-        # capillary_force = sat_change ** 3 * capillary_pressure_max
-        # linear func
-        # capillary_force = sat_change * capillary_pressure_max
 
         # Power func enhanced
         pc_max = capillary_pressure_max
@@ -131,22 +108,6 @@ class Cfd:
         sats = copy.deepcopy(s.ini.equation.sats[s.ini.equation.i_curr])
         output_1 = np.array(s.ini.local.output_1, dtype=float)
         output_2 = np.array(s.ini.local.output_2, dtype=float)
-
-        ### govnozaplatka for vof-pnm figure ###
-        # thrs_to_output = np.array([0, 3, 6, 11, 12, 13], dtype=int)
-        # thrs_to_output_errors = np.array(
-        #     [0.03102343213692101, None, None, 0.03579796023655951, None, None,
-        #      0.04515048524529482, None, None, None, None, 0.029713493963734,
-        #      0.038404150314642935, 0.037970478081370565], dtype=float)
-        #
-        # # thrs_to_output_errors = np.array(
-        # #     [0.11679919664651671, None, None, 1.5274739635244368, None, None,
-        # #      0.3458090603667309, None, None, None, None, 3.2285503090167533,
-        # #      0.8344315311376733, 0.32234159212433006], dtype=float)
-        #
-        # thrs_to_output_errors_to_cell = s.throats_values_to_cells(thrs_to_output_errors)
-        #
-        # print()
 
         cells_arrays = {
             'sat': sats,
@@ -211,17 +172,8 @@ class Cfd:
 
         return flow_ref
 
-    def calc_rel_perms(s, rel_perms_0, rel_perms_1, ca_numbers, ca_pressures, av_sats,
-                       flow_0_ref, flow_1_ref, flow_curr):
+    def calc_ca_pressure(s, ca_numbers, ca_pressures):
         throats_volumes = s.ini.throats_volumes
-        throats_av_sats = s.ini.equation.throats_av_sats
-
-        throats_vol_fluxes = np.absolute(np.array(list(dict(
-            (throat, float(s.ini.netgrid.throats_Ss[throat] * s.ini.throats_velocities[throat]))
-            for throat in s.ini.netgrid.throats_Ss).values())))
-
-        av_sat = np.sum(throats_volumes * throats_av_sats) / np.sum(throats_volumes)
-        av_bl = np.sum(throats_vol_fluxes * throats_av_sats) / np.sum(throats_vol_fluxes)
 
         throats_viscs = s.ini.throats_viscs
         throats_velocities = np.array(list(s.ini.throats_velocities.values()))
@@ -233,36 +185,3 @@ class Cfd:
         ca_pressure = np.sum(
             throats_volumes * s.ini.throats_capillary_pressures / np.sum(throats_volumes))
         ca_pressures.append(ca_pressure)
-
-        flow_rel_0 = flow_curr / flow_0_ref
-        flow_rel_1 = flow_curr / flow_1_ref
-
-        rel_perm_0 = av_bl * flow_rel_0
-        rel_perm_1 = (1. - av_bl) * flow_rel_1
-
-        rel_perms_0.append(rel_perm_0)
-        rel_perms_1.append(rel_perm_1)
-        av_sats.append(av_sat)
-
-    def calc_kunni_perms(s, rel_perms_0, rel_perms_1, ca_numbers, av_sats,
-                         flow_0_ref, flow_1_ref, vol_rate_in_0, vol_rate_out_1):
-        throats_volumes = s.ini.throats_volumes
-        throats_av_sats = s.ini.equation.throats_av_sats
-
-        av_sat = np.sum(throats_volumes * throats_av_sats) / np.sum(throats_volumes)
-
-        throats_viscs = s.ini.throats_viscs
-        throats_velocities = np.array(list(s.ini.throats_velocities.values()))
-        throats_ca_numbers = throats_viscs * np.absolute(throats_velocities) / s.ini.ift
-        ca_number = np.sum(throats_volumes * throats_ca_numbers) / np.sum(throats_volumes)
-        ca_numbers.append(ca_number)
-
-        flow_rel_0 = vol_rate_in_0 / flow_0_ref
-        flow_rel_1 = vol_rate_out_1 / flow_1_ref
-
-        rel_perm_0 = flow_rel_0
-        rel_perm_1 = flow_rel_1
-
-        rel_perms_0.append(vol_rate_in_0)
-        rel_perms_1.append(vol_rate_out_1)
-        av_sats.append(av_sat)
