@@ -62,6 +62,7 @@ def create_net(dims, length, width_range, width_step):
     pore_n = int(0)
     for col in range(int(dims[1] - 1)):
         throats_skip_freq = random.randint(2, int(dims[1]))
+        throats_skip_freq = 2 * 10**3
         for row in range(dims[0]):
             if pores_coordinates[int(pore_n + row)][0] != x_coord_min and \
                     pores_coordinates[int(pore_n + row)][0] != x_coord_max:
@@ -75,7 +76,7 @@ def create_net(dims, length, width_range, width_step):
 
     min_int = int(width_range[0] / width_step)
     max_int = int(width_range[1] / width_step)
-    depth = width_step * 30
+    depth = width_step
 
     for throat in throats_pores.keys():
         throats_depths[throat] = depth
