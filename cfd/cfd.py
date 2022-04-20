@@ -24,8 +24,6 @@
 import sys
 import os
 import numpy as np
-import json
-import pandas as pd
 import copy
 import matplotlib.pyplot as plt
 import time as tm
@@ -35,7 +33,6 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_path, '../../'))
 
 from netgrid import save_files_collection_to_file
-from matplotlib.ticker import FormatStrFormatter
 from vofpnm.cfd.ini_class import Ini
 from vofpnm.cfd.cfd_class import Cfd
 from vofpnm.helpers import *
@@ -45,7 +42,8 @@ plt.rcParams["font.family"] = "Times New Roman"
 
 start_time = tm.time()
 
-ini = Ini(config_file=sys.argv[1])
+ini = Ini('config/config.ini')
+ini.initialize_sats()
 
 cfd = Cfd(ini)
 
@@ -233,4 +231,3 @@ print("--- %s seconds ---" % execution_time)
 # plot_viscs_vels(axs[1], times, viscs, vol_rates_in)
 # # average saturation
 # plot_av_sat(axs[2], times, av_sats)
-
