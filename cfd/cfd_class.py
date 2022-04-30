@@ -45,9 +45,8 @@ class Cfd:
         s.ini.throats_velocities = dict((thr, float(mass_flows[thr]) / cross_secs[thr])
                                         for thr in mass_flows)
 
-    def calc_throat_capillary_pressure_curr(s, sat_change, capillary_pressure_max,
-                                            power_coeff=0.94):
-
+    def calc_throat_capillary_pressure_curr(s, sat_change, capillary_pressure_max):
+        power_coeff = s.ini.power_coeff
         # Power func enhanced
         pc_max = capillary_pressure_max
         a = power_coeff
@@ -58,7 +57,8 @@ class Cfd:
 
         return capillary_force
 
-    def calc_coupling_params(s, power_coeff=0.94):
+    def calc_coupling_params(s):
+        power_coeff = s.ini.power_coeff
         s.ini.equation.calc_throats_av_sats()
         s.ini.equation.calc_throats_sats_grads()
 
@@ -74,8 +74,7 @@ class Cfd:
         # print('pcs_max', pcs_max)
 
         s.ini.throats_capillary_pressures = s.calc_throat_capillary_pressure_curr(coeffs,
-                                                                                  pcs_max,
-                                                                                  power_coeff)
+                                                                                  pcs_max)
         # print(pcs_max)
         # print(s.ini.throats_capillary_pressures)
 

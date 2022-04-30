@@ -149,6 +149,7 @@ class Ini:
         s.sat_trim = float(get('Properties_vof', 'sat_trim'))
         s.params = {'time_period': s.time_period, 'const_time_step': s.const_time_step,
                     'tsm': s.tsm, 'sat_trim': s.sat_trim}
+        s.power_coeff = float(get('Properties_vof', 'power_coeff'))
 
         s.props = Props(s.params)
         s.local = Local(s.props, s.netgrid)
