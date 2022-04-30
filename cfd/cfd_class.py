@@ -171,16 +171,9 @@ class Cfd:
 
         return flow_ref
 
-    def calc_ca_pressure(s, ca_numbers, ca_pressures):
+    def calc_av_sat(s, av_sats):
         throats_volumes = s.ini.throats_volumes
+        throats_av_sats = s.ini.equation.throats_av_sats
 
-        throats_viscs = s.ini.throats_viscs
-        throats_velocities = np.array(list(s.ini.throats_velocities.values()))
-
-        throats_ca_numbers = throats_viscs * np.absolute(throats_velocities) / s.ini.ift
-        ca_number = np.sum(throats_volumes * throats_ca_numbers) / np.sum(throats_volumes)
-        ca_numbers.append(ca_number)
-
-        ca_pressure = np.sum(
-            throats_volumes * s.ini.throats_capillary_pressures / np.sum(throats_volumes))
-        ca_pressures.append(ca_pressure)
+        av_sat = np.sum(throats_volumes * throats_av_sats) / np.sum(throats_volumes)
+        av_sats.append(av_sat)

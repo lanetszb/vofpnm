@@ -35,10 +35,12 @@ sys.path.append(os.path.join(current_path, '../../'))
 from netgrid import save_files_collection_to_file
 from vofpnm.cfd.ini_class import Ini
 from vofpnm.cfd.cfd_class import Cfd
-from vofpnm.helpers import *
+from vofpnm.helpers import plot_conesrvation_check, plot_viscs_vels, plot_av_sat
 
-rc('text', usetex=True)
-plt.rcParams["font.family"] = "Times New Roman"
+plt.style.use('dracula')
+
+# rc('text', usetex=True)
+# plt.rcParams["font.family"] = "Times New Roman"
 
 start_time = tm.time()
 
@@ -70,12 +72,6 @@ ini.flow_1_ref = cfd.calc_rel_flow_rate()
 cfd.calc_coupling_params()
 cfd.run_pnm()
 
-rel_perms_0 = []
-rel_perms_1 = []
-capillary_numbers = []
-capillary_pressures = []
-av_sats = []
-
 throats_volumes = cfd.ini.throats_volumes
 throats_av_sats = cfd.ini.equation.throats_av_sats
 dens_0 = cfd.ini.paramsPnm['dens_0']
@@ -87,6 +83,7 @@ masses_inside = []
 
 times = []
 viscs = []
+av_sats = []
 vol_rates_in = []
 vol_rates_out = []
 
@@ -156,15 +153,24 @@ while True:
     vol_rate_in, vol_rate_out, vol_rate_in_0, vol_rate_out_1 = cfd.calc_flow_rates(mass_rates_in,
                                                                                    mass_rates_out)
     vol_rates_out.append(vol_rate_out_1)
-    cfd.calc_ca_pressure(capillary_numbers, capillary_pressures)
+
+    throats_vels = np.absolute(np.array(list(cfd.ini.throats_velocities.values())))
+    throats_viscs = cfd.ini.throats_viscs
+    visc = np.sum(cfd.ini.throats_volumes * throats_viscs) / np.sum(cfd.ini.throats_volumes)
+    viscs.append(visc)
+    vol_rates_in.append(vol_rate_in)
+    cfd.calc_av_sat(av_sats)
+
+    times.append(time_curr)
 
     print('time_step: ', round(time_step_curr, round_output_time))
     time.append(time_curr)
     cfd.ini.equation.print_cour_numbers(cfd.ini.throats_velocities, cfd.ini.time_step)
     print(' percentage executed:', round((time_curr / cfd.ini.time_period * 100.), 2), '%.', '\n')
-    cfd.run_pnm()
-    cells_arrays = cfd.process_paraview_data()
 
+    cfd.run_pnm()
+
+    cells_arrays = cfd.process_paraview_data()
     if is_output_step:
         cfd.ini.netgrid.cells_arrays = cells_arrays
         files_names.append(str(round(time_curr, round_output_time)) + '.vtu')
@@ -174,12 +180,6 @@ while True:
         out_idx += 1
         is_output_step = False
 
-    throats_vels = np.absolute(np.array(list(cfd.ini.throats_velocities.values())))
-    throats_viscs = cfd.ini.throats_viscs
-    visc = np.sum(cfd.ini.throats_volumes * throats_viscs) / np.sum(cfd.ini.throats_volumes)
-    times.append(time_curr)
-    viscs.append(visc)
-    vol_rates_in.append(vol_rate_in)
     if is_last_step:
         break
 
@@ -191,43 +191,28 @@ print("--- %s seconds ---" % execution_time)
 #############
 
 # Plotting
-# fig_width = 3.5
-# y_scale = 0.9
+fig_width = 3.5
+y_scale = 0.9
 # fig, ax = plt.subplots(figsize=(fig_width, fig_width * y_scale),
 #                        tight_layout=True)
-# # ax.set_ylim([-1., 1.])
-# # ax.yaxis.set_major_locator(plt.LinearLocator(numticks=5))
-# plot_capillary_pressures(ax, 1.0, cfd.calc_throat_capillary_pressure_curr, 1.5)
-# ax.margins(x=0, y=0.05)
-# plt.savefig('inOut/capillary_press_satdiff.eps', format="eps",
-#             bbox_inches='tight')
-# sys.exit(0)
+fig, axs = plt.subplots(3, sharex='all')
+
+# conservation
+mass_in_accum = np.cumsum(np.array(mass_rates_in) * np.array(time_steps))
+mass_out_accum = np.cumsum(np.array(mass_rates_out) * np.array(time_steps))
+massrates_net_accum = mass_in_accum - mass_out_accum
+
+masses_inside_accum = np.array(masses_inside) - mass_already_in
+
+mass_in_curr = np.array(mass_rates_in)
+mass_out_curr = np.array(mass_rates_out)
+massrates_net_curr = mass_in_curr - mass_out_curr
 #
-# # rel perms
-# fig1, ax1 = plt.subplots()
-# plot_rel_perms(ax1, av_sats, rel_perms_0, rel_perms_1,
-#                capillary_numbers)
-# # # capillary pressure
-# fig2, axs = plt.subplots(1, 2, sharey='all')
-# plot_capillary_pressure_curve(axs[0], av_sats, capillary_pressures)
-# plot_capillary_pressures(axs[1], np.min(capillary_pressures),
-#                          cfd.calc_throat_capillary_pressure_curr)
-# # conservation
-# mass_in_accum = np.cumsum(np.array(mass_rates_in) * np.array(time_steps))
-# mass_out_accum = np.cumsum(np.array(mass_rates_out) * np.array(time_steps))
-# massrates_net_accum = mass_in_accum - mass_out_accum
+
+plot_conesrvation_check(axs[0], times, massrates_net_accum,
+                        masses_inside_accum, massrates_net_curr)
 #
-# masses_inside_accum = np.array(masses_inside) - mass_already_in
-#
-# mass_in_curr = np.array(mass_rates_in)
-# mass_out_curr = np.array(mass_rates_out)
-# massrates_net_curr = mass_in_curr - mass_out_curr
-# #
-# fig, axs = plt.subplots(3, sharex='all')
-# plot_conesrvation_check(axs[0], times, massrates_net_accum,
-#                         masses_inside_accum, massrates_net_curr)
-#
-# # # viscosities velocities
-# plot_viscs_vels(axs[1], times, viscs, vol_rates_in)
-# # average saturation
-# plot_av_sat(axs[2], times, av_sats)
+# viscosities velocities
+plot_viscs_vels(axs[1], times, viscs, vol_rates_in)
+# average saturation
+plot_av_sat(axs[2], times, av_sats)
