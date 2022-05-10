@@ -46,7 +46,9 @@ from vofpnm.helpers import plot_rel_perms, plot_conesrvation_check, plot_viscs_v
 
 start_time = tm.time()
 
-ini = Ini(config_file=sys.argv[1])
+ini = Ini('config/config.ini')
+ini.initialize_sats()
+# ini = Ini(config_file=sys.argv[1])
 
 cfd = Cfd(ini)
 
@@ -79,12 +81,14 @@ throats_vels = np.absolute(np.array(list(cfd.ini.throats_velocities.values())))
 u_mgn_av = np.sum((throats_volumes * throats_vels)) / np.sum(throats_volumes)
 test_case_vofpnm['ref_u_mgn'] = u_mgn_av
 print('ref_u_mgn', u_mgn_av)
+
 throats_widths = np.absolute(np.array(list(cfd.ini.throats_widths.values())))
 av_width = np.sum((throats_volumes * throats_widths)) / np.sum(throats_volumes)
 test_case_vofpnm['width'] = av_width
 
 ini.flow_0_ref = cfd.calc_rel_flow_rate()
 print('flow_0_ref', ini.flow_0_ref)
+sys.exit(0)
 
 visc_1 = ini.paramsPnm['visc_1']
 ini.throats_viscs = np.tile(visc_1, ini.netgrid.throats_N)
@@ -239,7 +243,7 @@ test_case_vofpnm['grid_volume'] = cfd.ini.grid_volume
 test_case_vofpnm['total_volume'] = np.sum(throats_volumes)
 test_case_vofpnm['times_V_in'] = times_V_in
 
-json_file_u_mgns = 'inOut/validation/tmp.json'
+json_file_u_mgns = 'inOut/validation/relperms_large_net_no_ift.json'
 
 with open(json_file_u_mgns, 'w') as f:
     json.dump(test_case_vofpnm, f, sort_keys=False, indent=4 * ' ', ensure_ascii=False)

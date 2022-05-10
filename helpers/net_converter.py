@@ -26,14 +26,15 @@ import os
 import json
 import random
 
-from net_creator_relperm_article import create_net
+# from net_creator_relperm_article import create_net
+from net_creator import create_net
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_path, '../../'))
 
-dims = [int(6), int(6)]
+dims = [int(25), int(10)]
 width_step = 4.2e-6
-length = width_step * 40.
+length = width_step * 80.
 width_range = [width_step * 6., width_step * 10.]
 
 network_dict = create_net(dims, length, width_range, width_step)

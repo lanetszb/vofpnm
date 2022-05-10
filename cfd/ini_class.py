@@ -131,12 +131,12 @@ class Ini:
 
         coeff = 2. * abs(math.cos(math.radians(s.contact_angle))) * s.ift
         # coeff = 0.
-        # throats_capillary_pressures_max = dict(
-        #     (thr, (coeff / s.throats_widths[thr])) for thr in s.throats_widths)
-        # print(throats_capillary_pressures_max)
         throats_capillary_pressures_max = dict(
-            (thr, (coeff / s.throats_widths[thr]) + (coeff / s.throats_depths[thr]))
-            for thr in s.throats_widths)
+            (thr, (coeff / s.throats_widths[thr])) for thr in s.throats_widths)
+        # print(throats_capillary_pressures_max)
+        # throats_capillary_pressures_max = dict(
+        #     (thr, (coeff / s.throats_widths[thr]) + (coeff / s.throats_depths[thr]))
+        #     for thr in s.throats_widths)
         s.throats_capillary_pressures_max = np.array(list(throats_capillary_pressures_max.values()))
 
         # fully fill inlet throats
@@ -147,6 +147,7 @@ class Ini:
 
         # fully fill particular number of cells in inlet throats
         mult = 0.0476
+        mult = 0.
         s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
         for throat in s.inlet_throats:
             cells = s.netgrid.throats_cells[throat]
@@ -195,7 +196,7 @@ class Ini:
         # # fill the first cell in the inlet throats
         # for i in s.netgrid.types_cells['inlet']:
         #     s.sats_curr[i] = s.sat_inlet
-        mult = 0.0476
+        mult = 0.0476 * 2.
         # mult = 0
         s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
         for throat in s.inlet_throats:
