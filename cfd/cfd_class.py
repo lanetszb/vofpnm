@@ -47,7 +47,7 @@ class Cfd:
                                         for thr in mass_flows)
 
     def calc_throat_capillary_pressure_curr(s, sat_change, capillary_pressure_max,
-                                            power_coeff=0.94):
+                                            power_coeff=4.84):
         # Threshold
         # throats_coeffs = sat_change
         # threshold = 0.0001
@@ -81,7 +81,7 @@ class Cfd:
 
         return capillary_force
 
-    def calc_coupling_params(s, power_coeff=0.94):
+    def calc_coupling_params(s, power_coeff=4.84):
         s.ini.equation.calc_throats_av_sats()
         s.ini.equation.calc_throats_sats_grads()
 

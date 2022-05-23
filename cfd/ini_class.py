@@ -191,12 +191,18 @@ class Ini:
 
         s.grid_volume = float(get('Properties_grid', 'delta_V'))
 
+        #############
+        # Simulation
+        #############
+        s.pressure_in = float(get('Properties_simulation', 'pressure_in'))
+        s.pressure_out = float(get('Properties_simulation', 'pressure_out'))
+
     def initialize_sats(s):
         # s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
         # # fill the first cell in the inlet throats
         # for i in s.netgrid.types_cells['inlet']:
         #     s.sats_curr[i] = s.sat_inlet
-        mult = 0.0476 * 2.
+        mult = 0.0476
         # mult = 0
         s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)
         for throat in s.inlet_throats:
