@@ -44,7 +44,7 @@ from vofpnm.helpers.calc_relperms import param_to_smooth, process_data_pnm, proc
 # rc('text', usetex=True)
 # plt.rcParams["font.family"] = "Times New Roman"
 ini = Ini(config_file=sys.argv[1])
-json_vof_name = 'model_chess_vof_2_imb.json'
+json_vof_name = 'model_chess_vof_4_imb.json'
 results = dict()
 
 
@@ -65,6 +65,7 @@ def get_error(power_coeff):
     with open('inOut/optimisation/' + json_vof_name) as f:
         data_vof = json.load(f)
     V_vof = data_vof['V']
+    times_F_avs_vof = list(data_vof['times_F_avs'].values())
     times_vof = list(data_vof['times_F_avs'].keys())
     times_vof = [float(x) for x in times_vof]
     times_vof.sort()
@@ -289,24 +290,31 @@ def get_error(power_coeff):
     results[power_coeff]['s_0_vof'] = list(s_0_vof)
     results[power_coeff]['kr_0_vof'] = list(kr_0_vof)
     results[power_coeff]['kr_1_vof'] = list(kr_1_vof)
+    results[power_coeff]['times_F_avs_vof'] = times_F_avs_vof
+    results[power_coeff]['times_F_avs_pnm'] = list(times_F_avs.values())
+    print(results.keys())
 
-    print('len(kr_0_vof)', len(kr_0_vof))
-    print('len(kr_0_pnm)', len(kr_0_pnm))
-    kr0_error = np.mean(abs(s_0_vof - s_0_pnm))
+    kr0_error = np.mean(abs(kr_0_vof - kr_0_pnm))
     kr1_error = np.mean(abs(kr_1_vof - kr_1_pnm))
     kr_error = (kr0_error + kr1_error) / 2.
-    sat_error = np.mean(abs(s_0_vof - s_0_pnm))
+    sat_error_irr = np.mean(abs(s_0_vof[-1] - s_0_pnm[-1]))
+    sat_error_av = np.mean(abs(s_0_vof - s_0_pnm))
+    sat_error = (sat_error_irr + sat_error_av) / 2.
+    bl_error = np.mean(abs(np.array(times_F_avs_vof) - np.array(list(times_F_avs.values()))))
     results[power_coeff]['sat_error'] = sat_error
     results[power_coeff]['kr_error'] = kr_error
     print('kr_error', kr_error)
+    print('bl_error', bl_error)
     print('sat_error', sat_error)
 
-    return sat_error
+    return bl_error
 
 
-res = minimize_scalar(get_error, bounds=(0.5, 5), method='Bounded', options={'maxiter': 1,
-                                                                             'xatol': 1e-04,
-                                                                             'disp': 3})
+bounds_list = [(0.5, 5.)]
+for bounds in bounds_list:
+    res = minimize_scalar(get_error, bounds=bounds, method='Bounded', options={'maxiter': 10,
+                                                                               'xtol': 1e-04,
+                                                                               'disp': 3})
 
 min_kr_error = 100.
 coeff_miner = str()
@@ -317,7 +325,7 @@ for key in results:
         coeff_miner = key
 results['coeff_miner'] = coeff_miner
 
-results_output = 'inOut/optimisation/model2_opt_kr_imb_sat.json'
+results_output = 'inOut/optimisation/model4_imb_opt_sat.json'
 
 with open(results_output, 'w') as f:
     json.dump(results, f, sort_keys=False, indent=4 * ' ', ensure_ascii=False)
@@ -327,17 +335,17 @@ with open(results_output) as f:
 for key in results:
     if key == 'coeff_miner':
         break
-    plt.plot(np.array(results[key]['W_pnm']), results[key]['s_0_pnm'],
+    plt.plot(np.array(results[key]['W_pnm']), results[key]['times_F_avs_pnm'],
              color="blue", linestyle='dashed', linewidth=0.5)
 
 coeff_miner = results['coeff_miner']
-plt.plot(np.array(results[str(coeff_miner)]['W_pnm']), results[str(coeff_miner)]['s_0_pnm'],
+plt.plot(np.array(results[str(coeff_miner)]['W_pnm']), results[str(coeff_miner)]['times_F_avs_pnm'],
          color="blue", label="PNM")
-plt.plot(np.array(results[str(coeff_miner)]['W_vof']), results[str(coeff_miner)]['s_0_vof'],
+plt.plot(np.array(results[str(coeff_miner)]['W_vof']), results[str(coeff_miner)]['times_F_avs_vof'],
          color="red", label="VOF")
 plt.title('Model 2')
 plt.xlabel('PVI')
-plt.ylabel('S0')
+plt.ylabel('f')
 plt.legend()
 plt.show()
 
