@@ -76,6 +76,9 @@ test_case_vofpnm['mus'] = nus
 test_case_vofpnm['rhos'] = rhos
 test_case_vofpnm['sigma'] = ini.ift
 
+pc_max = 1.5 * max(ini.throats_capillary_pressures_max)
+test_case_vofpnm['pc_max'] = pc_max
+
 # ### validation with openfoam one-phase ###
 throats_vels = np.absolute(np.array(list(cfd.ini.throats_velocities.values())))
 
@@ -88,7 +91,22 @@ for throat in ini.inlet_throats:
     area = ini.netgrid.throats_Ss[throat]
     density = ini.paramsPnm['dens_0']
     vol_rate_in += velocity * area
-vel_ref = vol_rate_in / 0.0025 / 4.2e-6
+
+throat_inlet = list(ini.inlet_throats)[0]
+throat_inlet_pore_1 = ini.throats_pores[throat_inlet][0]
+throat_inlet_pore_2 = ini.throats_pores[throat_inlet][1]
+throat_inlet_x_coord_min = min([ini.pores_coordinates[throat_inlet_pore_1][0],
+                                ini.pores_coordinates[throat_inlet_pore_2][0]])
+
+throat_outlet = list(ini.outlet_throats)[0]
+throat_outlet_pore_1 = ini.throats_pores[throat_outlet][0]
+throat_outlet_pore_2 = ini.throats_pores[throat_outlet][1]
+throat_outlet_x_coord_max = max([ini.pores_coordinates[throat_outlet_pore_1][0],
+                                 ini.pores_coordinates[throat_outlet_pore_2][0]])
+
+L_z = 4.2e-6
+L_y = 0.0025
+vel_ref = vol_rate_in / L_y / L_z
 
 u_mgn_x = 0
 vols_by_vels_accum = 0
@@ -108,41 +126,24 @@ u_mgn_x = vols_by_vels_accum / vols_accum
 
 poro = vel_ref / u_mgn_x
 
-throat_inlet = list(ini.inlet_throats)[0]
-throat_inlet_pore_1 = ini.throats_pores[throat_inlet][0]
-throat_inlet_pore_2 = ini.throats_pores[throat_inlet][1]
-throat_inlet_x_coord_min = min([ini.pores_coordinates[throat_inlet_pore_1][0],
-                                ini.pores_coordinates[throat_inlet_pore_2][0]])
-
-throat_outlet = list(ini.outlet_throats)[0]
-throat_outlet_pore_1 = ini.throats_pores[throat_outlet][0]
-throat_outlet_pore_2 = ini.throats_pores[throat_outlet][1]
-throat_outlet_x_coord_max = max([ini.pores_coordinates[throat_outlet_pore_1][0],
-                                 ini.pores_coordinates[throat_outlet_pore_2][0]])
-
 p_in_accum = 0
 vol_rates_in_accum = 0
 for throat in ini.inlet_throats:
     velocity = ini.throats_velocities[throat]
     area = ini.netgrid.throats_Ss[throat]
-    vol_rates_in_accum += velocity * area
+    vol_rate_in = velocity * area
+    vol_rates_in_accum += vol_rate_in
     pore_1 = ini.throats_pores[throat][0]
     pore_2 = ini.throats_pores[throat][1]
     if ini.pores_coordinates[pore_1][0] <= ini.pores_coordinates[pore_2][0]:
-        p_in_accum += list(ini.pnm.pressures)[pore_1] * velocity * area
+        p_in_accum += list(ini.pnm.pressures)[pore_1] * vol_rate_in
     else:
-        p_in_accum += list(ini.pnm.pressures)[pore_2] * velocity * area
+        p_in_accum += list(ini.pnm.pressures)[pore_2] * vol_rate_in
 pressure_in = p_in_accum / vol_rates_in_accum
 
 L_x = throat_outlet_x_coord_max - throat_inlet_x_coord_min
 dP = pressure_in - ini.pressure_out
 permeability = vel_ref * visc_0 * L_x / dP
-print('u_mgn_av', u_mgn_av)
-print('u_mgn_x', u_mgn_x)
-print('vel_ref', vel_ref)
-print('poro', poro)
-print('permeability', permeability)
-### calculating darcy porosity and permeability ###
 
 test_case_vofpnm['ref_u_mgn'] = u_mgn_av
 print('ref_u_mgn', u_mgn_av)
@@ -259,14 +260,13 @@ while True:
         pore_2 = ini.throats_pores[throat][1]
         pore_1_x_coord = ini.pores_coordinates[pore_1][0]
         pore_2_x_coord = ini.pores_coordinates[pore_2][0]
-    if pore_1_x_coord != pore_2_x_coord:
-        vols_by_vels_accum += throats_volumes[throat] * throats_vels[throat]
-        vols_accum += throats_volumes[throat]
-    if pore_1_x_coord == pore_2_x_coord:
-        vols_by_vels_accum += 0
-        vols_accum += throats_volumes[throat]
+        if pore_1_x_coord != pore_2_x_coord:
+            vols_by_vels_accum += throats_volumes[throat] * throats_vels[throat]
+            vols_accum += throats_volumes[throat]
+        if pore_1_x_coord == pore_2_x_coord:
+            vols_by_vels_accum += 0
+            vols_accum += throats_volumes[throat]
     u_mgn_x = vols_by_vels_accum / vols_accum
-
     times_u_mgn_x.append(u_mgn_x)
 
     p_in_accum = 0
@@ -274,15 +274,15 @@ while True:
     for throat in ini.inlet_throats:
         velocity = ini.throats_velocities[throat]
         area = ini.netgrid.throats_Ss[throat]
-        vol_rates_in_accum += velocity * area
+        vol_rate_in = velocity * area
+        vol_rates_in_accum += vol_rate_in
         pore_1 = ini.throats_pores[throat][0]
         pore_2 = ini.throats_pores[throat][1]
-        if list(ini.pnm.pressures)[pore_1] >= list(ini.pnm.pressures)[pore_2]:
-            p_in_accum += list(ini.pnm.pressures)[pore_1] * velocity * area
+        if ini.pores_coordinates[pore_1][0] <= ini.pores_coordinates[pore_2][0]:
+            p_in_accum += list(ini.pnm.pressures)[pore_1] * vol_rate_in
         else:
-            p_in_accum += list(ini.pnm.pressures)[pore_2] * velocity * area
+            p_in_accum += list(ini.pnm.pressures)[pore_2] * vol_rate_in
     pressure_in = p_in_accum / vol_rates_in_accum
-
     times_pressure_in.append(pressure_in)
 
     ### New params for history matching ###
@@ -335,6 +335,8 @@ print("--- %s seconds ---" % execution_time)
 #############
 # Rel perms validation output
 #############
+test_case_vofpnm['poro'] = poro
+test_case_vofpnm['permeability'] = permeability
 test_case_vofpnm['times_alpha_avs'] = times_alpha_avs
 test_case_vofpnm['times_u_mgn_avs'] = times_u_mgn_avs
 test_case_vofpnm['times_u_mgn_x'] = times_u_mgn_x
@@ -345,8 +347,6 @@ test_case_vofpnm['time_step'] = cfd.ini.output_time_step
 test_case_vofpnm['grid_volume'] = cfd.ini.grid_volume
 test_case_vofpnm['total_volume'] = np.sum(throats_volumes)
 test_case_vofpnm['times_V_in'] = times_V_in
-test_case_vofpnm['poro'] = poro
-test_case_vofpnm['permeability'] = permeability
 
 json_file_u_mgns = 'inOut/validation/model_chess_pnm_2_imb.json'
 
