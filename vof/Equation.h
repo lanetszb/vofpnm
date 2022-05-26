@@ -34,7 +34,7 @@
 #include "math/Props.h"
 #include "math/Local.h"
 #include "math/Convective.h"
-#include <netgrid/Netgrid.h>
+#include <Netgrid.h>
 
 typedef Eigen::Triplet<double> Triplet;
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> Matrix;

@@ -34,7 +34,7 @@ from matplotlib import rc
 current_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_path, '../../'))
 
-from netgrid import save_files_collection_to_file
+from netgrid_old import save_files_collection_to_file
 from matplotlib.ticker import FormatStrFormatter
 from vofpnm.cfd.ini_class import Ini
 from vofpnm.cfd.cfd_class import Cfd
@@ -105,7 +105,7 @@ throat_outlet_x_coord_max = max([ini.pores_coordinates[throat_outlet_pore_1][0],
                                  ini.pores_coordinates[throat_outlet_pore_2][0]])
 
 L_z = 4.2e-6
-L_y = 0.0025
+L_y = 0.0021462
 vel_ref = vol_rate_in / L_y / L_z
 
 u_mgn_x = 0
@@ -335,6 +335,8 @@ print("--- %s seconds ---" % execution_time)
 #############
 # Rel perms validation output
 #############
+test_case_vofpnm['l_x'] = L_x
+test_case_vofpnm['area'] = L_y * L_z
 test_case_vofpnm['poro'] = poro
 test_case_vofpnm['permeability'] = permeability
 test_case_vofpnm['times_alpha_avs'] = times_alpha_avs
@@ -348,7 +350,7 @@ test_case_vofpnm['grid_volume'] = cfd.ini.grid_volume
 test_case_vofpnm['total_volume'] = np.sum(throats_volumes)
 test_case_vofpnm['times_V_in'] = times_V_in
 
-json_file_u_mgns = 'inOut/validation/model_chess_pnm_2_imb.json'
+json_file_u_mgns = 'inOut/validation/final_4_dr_400_1_vof.json'
 
 with open(json_file_u_mgns, 'w') as f:
     json.dump(test_case_vofpnm, f, sort_keys=False, indent=4 * ' ', ensure_ascii=False)

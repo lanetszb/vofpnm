@@ -14,7 +14,7 @@ find_package(Eigen3 REQUIRED)
 
 add_dependencies(netgrid netgrid)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../netgrid_old)
 
 set(SOURCE_CODE math/Props.cpp math/Boundary.cpp math/Local.cpp math/Convective.cpp Equation.cpp
         math/funcs.cpp)

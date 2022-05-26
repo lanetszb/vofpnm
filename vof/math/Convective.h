@@ -31,7 +31,7 @@
 #include <Eigen/Dense>
 
 #include "Props.h"
-#include <netgrid/Netgrid.h>
+#include <Netgrid.h>
 
 class Convective {
 

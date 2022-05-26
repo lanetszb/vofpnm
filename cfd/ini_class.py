@@ -32,7 +32,7 @@ import json
 current_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_path, '../../'))
 
-from netgrid import Netgrid, save_files_collection_to_file
+from netgrid_old import Netgrid, save_files_collection_to_file
 from vofpnm import Pnm
 from vofpnm import Props, Boundary, Local, Convective, Equation
 
@@ -138,6 +138,8 @@ class Ini:
         #     (thr, (coeff / s.throats_widths[thr]) + (coeff / s.throats_depths[thr]))
         #     for thr in s.throats_widths)
         s.throats_capillary_pressures_max = np.array(list(throats_capillary_pressures_max.values()))
+        print(s.throats_capillary_pressures_max)
+        sys.exit(0)
 
         # fully fill inlet throats
         # s.sats_curr = np.tile(s.sat_ini, s.netgrid.cells_N)

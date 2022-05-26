@@ -7,7 +7,7 @@
 #include <map>
 
 #include <Eigen/Sparse>
-#include <netgrid/Netgrid.h>
+#include <Netgrid.h>
 
 typedef Eigen::SparseMatrix<double, Eigen::RowMajor> Matrix;
 typedef Matrix::InnerIterator MatrixIterator;
